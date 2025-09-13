@@ -1,5 +1,6 @@
 import { ArrowLeft, MoreVertical, Phone, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NetworkIndicator } from "@/components/network/NetworkIndicator";
 
 interface ChatHeaderProps {
   contactName: string;
@@ -35,7 +36,10 @@ export const ChatHeader = ({ contactName, contactId, isOnline, onBack }: ChatHea
           
           <div className="text-white">
             <h2 className="font-medium text-lg leading-tight">{contactName}</h2>
-            <p className="text-white/70 text-sm">ID: {contactId}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-white/70 text-sm">ID: {contactId}</p>
+              <NetworkIndicator className="text-white/70" />
+            </div>
           </div>
         </div>
       </div>

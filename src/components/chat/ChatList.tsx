@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Search, MessageCircle, Users, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { NetworkIndicator } from "@/components/network/NetworkIndicator";
 
 interface Contact {
   id: string;
@@ -17,10 +17,20 @@ interface ChatListProps {
   contacts: Contact[];
   onContactSelect: (contact: Contact) => void;
   onAddContact: () => void;
-  userId: string;
+  onOpenSettings: () => void;
+  userProfile: {
+    name: string;
+    id: string;
+  };
 }
 
-export const ChatList = ({ contacts, onContactSelect, onAddContact, userId }: ChatListProps) => {
+export const ChatList = ({ 
+  contacts, 
+  onContactSelect, 
+  onAddContact, 
+  onOpenSettings,
+  userProfile 
+}: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   
   const filteredContacts = contacts.filter(contact =>
@@ -47,6 +57,7 @@ export const ChatList = ({ contacts, onContactSelect, onAddContact, userId }: Ch
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">WhatsApp Clone</h1>
           <div className="flex items-center gap-2">
+            <NetworkIndicator showLabel className="mr-2" />
             <Button
               variant="ghost"
               size="sm"
@@ -57,7 +68,8 @@ export const ChatList = ({ contacts, onContactSelect, onAddContact, userId }: Ch
             </Button>
             <Button
               variant="ghost"
-              size="sm"
+              size="sm" 
+              onClick={onOpenSettings}
               className="text-white hover:bg-white/20 p-2 h-auto"
             >
               <Settings className="h-5 w-5" />
@@ -65,9 +77,13 @@ export const ChatList = ({ contacts, onContactSelect, onAddContact, userId }: Ch
           </div>
         </div>
         
-        {/* User ID Display */}
+        {/* User Profile Display */}
         <div className="mt-2 text-white/80 text-sm">
-          Il tuo ID: <span className="font-mono font-medium">{userId}</span>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="font-medium">{userProfile.name}</span> • ID: <span className="font-mono">{userProfile.id}</span>
+            </div>
+          </div>
         </div>
       </header>
 

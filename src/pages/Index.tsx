@@ -2,7 +2,9 @@ import { useState } from "react";
 import { ChatList } from "@/components/chat/ChatList";
 import { ChatView } from "@/components/chat/ChatView";
 import { AddContactModal } from "@/components/chat/AddContactModal";
+import { SettingsModal } from "@/components/settings/SettingsModal";
 import { useUserId } from "@/hooks/useUserId";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 
 interface Contact {
@@ -16,6 +18,7 @@ interface Contact {
 
 const Index = () => {
   const { userId } = useUserId();
+  const { profile, updateName } = useUserProfile(userId);
   const { toast } = useToast();
   const [contacts, setContacts] = useState<Contact[]>([
     {
@@ -29,6 +32,7 @@ const Index = () => {
   ]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleAddContact = (contactId: string, contactName: string) => {
     // Controlla se il contatto esiste già
@@ -90,7 +94,8 @@ const Index = () => {
           contacts={contacts}
           onContactSelect={handleContactSelect}
           onAddContact={() => setShowAddContact(true)}
-          userId={userId}
+          onOpenSettings={() => setShowSettings(true)}
+          userProfile={profile}
         />
       )}
 
@@ -99,6 +104,13 @@ const Index = () => {
         onClose={() => setShowAddContact(false)}
         onAddContact={handleAddContact}
         userId={userId}
+      />
+
+      <SettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        userProfile={profile}
+        onUpdateName={updateName}
       />
     </div>
   );
