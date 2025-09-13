@@ -3,6 +3,10 @@ import { ChatList } from "@/components/chat/ChatList";
 import { ChatView } from "@/components/chat/ChatView";
 import { AddContactModal } from "@/components/chat/AddContactModal";
 import { SettingsModal } from "@/components/settings/SettingsModal";
+import { SwipeablePages } from "@/components/navigation/SwipeablePages";
+import { StatusPage } from "./StatusPage";
+import { CallsPage } from "./CallsPage";
+import { SettingsPage } from "./SettingsPage";
 import { useUserId } from "@/hooks/useUserId";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +24,7 @@ const Index = () => {
   const { userId } = useUserId();
   const { profile, updateName } = useUserProfile(userId);
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1); // Start with Chat page
   const [contacts, setContacts] = useState<Contact[]>([
     {
       id: 'DEMO1234',
@@ -84,20 +89,28 @@ const Index = () => {
 
   return (
     <div className="h-screen bg-background overflow-hidden">
-      {selectedContact ? (
-        <ChatView
-          contact={selectedContact}
-          onBack={handleBackToList}
-        />
-      ) : (
-        <ChatList
-          contacts={contacts}
-          onContactSelect={handleContactSelect}
-          onAddContact={() => setShowAddContact(true)}
-          onOpenSettings={() => setShowSettings(true)}
-          userProfile={profile}
-        />
-      )}
+      <SwipeablePages 
+        currentPage={currentPage} 
+        onPageChange={setCurrentPage}
+      >
+        <StatusPage />
+        {selectedContact ? (
+          <ChatView
+            contact={selectedContact}
+            onBack={handleBackToList}
+          />
+        ) : (
+          <ChatList
+            contacts={contacts}
+            onContactSelect={handleContactSelect}
+            onAddContact={() => setShowAddContact(true)}
+            onOpenSettings={() => setShowSettings(true)}
+            userProfile={profile}
+          />
+        )}
+        <CallsPage />
+        <SettingsPage />
+      </SwipeablePages>
 
       <AddContactModal
         open={showAddContact}
