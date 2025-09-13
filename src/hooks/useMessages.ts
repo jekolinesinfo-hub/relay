@@ -91,7 +91,12 @@ export const useMessages = (conversationId: string | null, userId: string) => {
   }, [conversationId, userId]);
 
   const sendMessage = async (text: string, recipientId: string) => {
-    if (!conversationId || !text.trim()) return;
+    if (!conversationId || !text.trim()) {
+      console.log('Cannot send message:', { conversationId, text: text.trim() });
+      return;
+    }
+
+    console.log('Sending message:', { conversationId, userId, text, recipientId });
 
     const tempId = `temp-${Date.now()}`;
     const tempMessage: Message = {
@@ -118,7 +123,7 @@ export const useMessages = (conversationId: string | null, userId: string) => {
           }
         ])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error sending message:', error);
@@ -126,11 +131,24 @@ export const useMessages = (conversationId: string | null, userId: string) => {
         setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
         toast({
           title: 'Errore',
-          description: 'Impossibile inviare il messaggio',
+          description: `Impossibile inviare il messaggio: ${error.message}`,
           variant: 'destructive',
         });
         return;
       }
+
+      if (!data) {
+        console.error('No data returned from message insert');
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+        toast({
+          title: 'Errore',
+          description: 'Impossibile inviare il messaggio - nessun dato ritornato',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      console.log('Message sent successfully:', data);
 
       // Replace optimistic message with real one
       setMessages((prev) =>

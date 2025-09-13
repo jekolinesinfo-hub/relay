@@ -30,13 +30,15 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full max-h-full bg-background overflow-hidden">
-      <ChatHeader
-        contactName={contact.name}
-        contactId={contact.id}
-        isOnline={contact.isOnline}
-        onBack={onBack}
-      />
+    <div className="flex flex-col h-full max-h-full bg-background">
+      <div className="flex-shrink-0 sticky top-0 z-10 bg-background border-b border-border">
+        <ChatHeader
+          contactName={contact.name}
+          contactId={contact.id}
+          isOnline={contact.isOnline}
+          onBack={onBack}
+        />
+      </div>
       
       {/* Messages Area */}
       <div 
@@ -54,7 +56,7 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
         </div>
       </div>
       
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 sticky bottom-0 bg-background border-t border-border">
         <ChatInput onSendMessage={handleSendMessage} />
       </div>
     </div>
