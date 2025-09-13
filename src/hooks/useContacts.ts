@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 
@@ -22,11 +22,16 @@ export const useContacts = (userId: string) => {
     
     setIsLoading(true);
     try {
+      console.log('Fetching contacts for userId:', userId);
+      
       // Get all contacts for this user
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
         .select('contact_id, contact_name')
         .eq('user_id', userId);
+
+      console.log('Contacts data:', contactsData);
+      console.log('Contacts error:', contactsError);
 
       if (contactsError) {
         console.error('Error fetching contacts:', contactsError);
@@ -204,7 +209,7 @@ export const useContacts = (userId: string) => {
     }
   }, [userId]);
 
-  const searchUserByIdPartial = async (partialId: string) => {
+  const searchUserByIdPartial = useCallback(async (partialId: string) => {
     if (!partialId || partialId.length < 2) return [];
     
     try {
@@ -224,7 +229,7 @@ export const useContacts = (userId: string) => {
       console.error('Error searching users:', error);
       return [];
     }
-  };
+  }, []);
 
   return {
     contacts,
