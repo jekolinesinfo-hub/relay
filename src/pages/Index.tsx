@@ -64,6 +64,18 @@ const Index = () => {
     });
   };
 
+  const handleDeleteContact = (contactId: string) => {
+    setContacts(prev => prev.filter(contact => contact.id !== contactId));
+    // If the deleted contact is currently selected, go back to list
+    if (selectedContact && selectedContact.id === contactId) {
+      setSelectedContact(null);
+    }
+    toast({
+      title: "Chat eliminata",
+      description: "La chat è stata eliminata con successo",
+    });
+  };
+
   const handleContactSelect = (contact: Contact) => {
     setSelectedContact(contact);
     // Reset unread count quando si apre la chat
@@ -105,6 +117,7 @@ const Index = () => {
             onContactSelect={handleContactSelect}
             onAddContact={() => setShowAddContact(true)}
             onOpenSettings={() => setShowSettings(true)}
+            onDeleteContact={handleDeleteContact}
             userProfile={profile}
           />
         )}

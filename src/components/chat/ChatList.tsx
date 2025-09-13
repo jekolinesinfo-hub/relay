@@ -3,6 +3,7 @@ import { Search, MessageCircle, Users, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NetworkIndicator } from "@/components/network/NetworkIndicator";
+import { ChatItem } from "./ChatItem";
 
 interface Contact {
   id: string;
@@ -18,6 +19,7 @@ interface ChatListProps {
   onContactSelect: (contact: Contact) => void;
   onAddContact: () => void;
   onOpenSettings: () => void;
+  onDeleteContact?: (contactId: string) => void;
   userProfile: {
     name: string;
     id: string;
@@ -29,6 +31,7 @@ export const ChatList = ({
   onContactSelect, 
   onAddContact, 
   onOpenSettings,
+  onDeleteContact,
   userProfile 
 }: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -119,42 +122,13 @@ export const ChatList = ({
           </div>
         ) : (
           filteredContacts.map((contact) => (
-            <div
+            <ChatItem
               key={contact.id}
-              onClick={() => onContactSelect(contact)}
-              className="flex items-center gap-3 p-4 border-b hover:bg-accent/50 cursor-pointer transition-colors"
-            >
-              <div className="relative">
-                <div className="w-12 h-12 bg-whatsapp-green-light rounded-full flex items-center justify-center">
-                  <span className="text-whatsapp-green font-medium text-lg">
-                    {contact.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                {contact.isOnline && (
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-background"></div>
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-foreground truncate">{contact.name}</h3>
-                  <span className="text-xs text-muted-foreground">
-                    {formatTimestamp(contact.timestamp)}
-                  </span>
-                </div>
-                
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-sm text-muted-foreground truncate">
-                    {contact.lastMessage || `ID: ${contact.id}`}
-                  </p>
-                  {contact.unreadCount && contact.unreadCount > 0 && (
-                    <span className="bg-whatsapp-green text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
-                      {contact.unreadCount > 99 ? '99+' : contact.unreadCount}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+              contact={contact}
+              onSelect={onContactSelect}
+              onDelete={onDeleteContact || (() => {})}
+              formatTimestamp={formatTimestamp}
+            />
           ))
         )}
       </div>
