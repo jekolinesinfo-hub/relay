@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.156ee5cd96b04b86be06814e097c3931',
+  appId: 'com.lovable.hopchat',
   appName: 'relay',
   webDir: 'dist',
   server: {
