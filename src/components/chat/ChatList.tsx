@@ -55,7 +55,7 @@ export const ChatList = ({
       {/* Header */}
       <header className="bg-whatsapp-green px-4 py-3 text-white">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">WhatsApp Clone</h1>
+          <h1 className="text-xl font-semibold">Relay</h1>
           <div className="flex items-center gap-2">
             <NetworkIndicator showLabel className="mr-2" />
             <Button
