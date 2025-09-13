@@ -30,17 +30,19 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      <ChatHeader
-        contactName={contact.name}
-        contactId={contact.id}
-        isOnline={contact.isOnline}
-        onBack={onBack}
-      />
+    <div className="flex flex-col h-screen max-h-screen bg-background overflow-hidden">
+      <div className="flex-shrink-0 pt-safe">
+        <ChatHeader
+          contactName={contact.name}
+          contactId={contact.id}
+          isOnline={contact.isOnline}
+          onBack={onBack}
+        />
+      </div>
       
       {/* Messages Area */}
       <div 
-        className="flex-1 overflow-y-auto px-2 py-2 pb-safe"
+        className="flex-1 min-h-0 overflow-y-auto px-2 py-2"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f5f5f5' fill-opacity='0.3'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10zm10 0c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10z'/%3E%3C/g%3E%3C/svg%3E")`,
           backgroundColor: 'hsl(var(--chat-background))'
@@ -54,7 +56,7 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
         </div>
       </div>
       
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 pb-safe">
         <ChatInput onSendMessage={handleSendMessage} />
       </div>
     </div>
