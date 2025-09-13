@@ -2,19 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { ChatHeader } from "./ChatHeader";
 import { ChatBubble } from "./ChatBubble";
 import { ChatInput } from "./ChatInput";
-
-interface Message {
-  id: string;
-  text: string;
-  timestamp: Date;
-  sent: boolean;
-  status?: 'sending' | 'sent' | 'delivered' | 'read';
-}
+import { useMessages, Message } from "@/hooks/useMessages";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Contact {
   id: string;
   name: string;
   isOnline?: boolean;
+  conversationId?: string;
 }
 
 interface ChatViewProps {
@@ -23,23 +18,8 @@ interface ChatViewProps {
 }
 
 export const ChatView = ({ contact, onBack }: ChatViewProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: `Ciao! Questo è un messaggio di test da ${contact.name}`,
-      timestamp: new Date(Date.now() - 60000),
-      sent: false,
-      status: 'read'
-    },
-    {
-      id: '2', 
-      text: 'Ciao! Come stai?',
-      timestamp: new Date(Date.now() - 30000),
-      sent: true,
-      status: 'read'
-    }
-  ]);
-  
+  const { userId } = useAuth();
+  const { messages, sendMessage } = useMessages(contact.conversationId || null, userId || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -50,27 +30,9 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (text: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      timestamp: new Date(),
-      sent: true,
-      status: 'sending'
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    
-    // Simula invio messaggio - qui andrà la logica di rete
-    setTimeout(() => {
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === newMessage.id 
-            ? { ...msg, status: 'sent' }
-            : msg
-        )
-      );
-    }, 1000);
+  const handleSendMessage = async (text: string) => {
+    if (!userId || !contact.conversationId) return;
+    await sendMessage(text, contact.id);
   };
 
   return (

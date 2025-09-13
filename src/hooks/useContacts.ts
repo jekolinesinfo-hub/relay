@@ -1,0 +1,227 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from './use-toast';
+
+export interface Contact {
+  id: string;
+  name: string;
+  lastMessage?: string;
+  timestamp?: Date;
+  unreadCount?: number;
+  isOnline?: boolean;
+  conversationId?: string;
+}
+
+export const useContacts = (userId: string) => {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const fetchContacts = async () => {
+    if (!userId) return;
+    
+    setIsLoading(true);
+    try {
+      // Get all contacts for this user
+      const { data: contactsData, error: contactsError } = await supabase
+        .from('contacts')
+        .select(`
+          contact_user_id,
+          profiles!contacts_contact_user_id_fkey(
+            user_id,
+            display_name
+          )
+        `)
+        .eq('user_id', userId);
+
+      if (contactsError) {
+        console.error('Error fetching contacts:', contactsError);
+        return;
+      }
+
+      // Get conversations with these contacts
+      const { data: conversationsData, error: conversationsError } = await supabase
+        .from('conversations')
+        .select('*')
+        .or(`participant1.eq.${userId},participant2.eq.${userId}`)
+        .order('updated_at', { ascending: false });
+
+      if (conversationsError) {
+        console.error('Error fetching conversations:', conversationsError);
+        return;
+      }
+
+      const formattedContacts: Contact[] = contactsData
+        .map((contact) => {
+          const profile = contact.profiles;
+          if (!profile) return null;
+
+          // Find conversation with this contact
+          const conversation = conversationsData.find(
+            (conv) =>
+              (conv.participant1 === userId && conv.participant2 === profile.user_id) ||
+              (conv.participant2 === userId && conv.participant1 === profile.user_id)
+          );
+
+          return {
+            id: profile.user_id,
+            name: profile.display_name || 'Unknown User',
+            lastMessage: conversation?.last_message || '',
+            timestamp: conversation ? new Date(conversation.updated_at) : undefined,
+            unreadCount: 0, // TODO: Implement unread count
+            isOnline: Math.random() > 0.5, // Random online status for demo
+            conversationId: conversation?.id,
+          };
+        })
+        .filter((contact): contact is Contact => contact !== null)
+        .sort((a, b) => {
+          if (!a.timestamp) return 1;
+          if (!b.timestamp) return -1;
+          return b.timestamp.getTime() - a.timestamp.getTime();
+        });
+
+      setContacts(formattedContacts);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addContact = async (contactId: string, contactName?: string) => {
+    try {
+      // Check if contact profile exists
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', contactId)
+        .single();
+
+      if (profileError && profileError.code === 'PGRST116') {
+        toast({
+          title: 'Utente non trovato',
+          description: `L'ID ${contactId} non corrisponde a nessun utente registrato`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      if (profileError) {
+        console.error('Error checking profile:', profileError);
+        return false;
+      }
+
+      // Check if contact already exists
+      const { data: existingContact } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('contact_user_id', contactId)
+        .single();
+
+      if (existingContact) {
+        toast({
+          title: 'Contatto già esistente',
+          description: 'Questo contatto è già nella tua lista',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      // Add contact
+      const { error: addError } = await supabase
+        .from('contacts')
+        .insert([
+          {
+            user_id: userId,
+            contact_user_id: contactId,
+          }
+        ]);
+
+      if (addError) {
+        console.error('Error adding contact:', addError);
+        toast({
+          title: 'Errore',
+          description: 'Impossibile aggiungere il contatto',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      // Create or find conversation
+      const { data: existingConversation } = await supabase
+        .from('conversations')
+        .select('*')
+        .or(`
+          and(participant1.eq.${userId},participant2.eq.${contactId}),
+          and(participant1.eq.${contactId},participant2.eq.${userId})
+        `)
+        .single();
+
+      if (!existingConversation) {
+        await supabase
+          .from('conversations')
+          .insert([
+            {
+              participant1: userId,
+              participant2: contactId,
+            }
+          ]);
+      }
+
+      toast({
+        title: 'Contatto aggiunto!',
+        description: `${profileData.display_name || contactId} è stato aggiunto ai tuoi contatti`,
+      });
+
+      // Refresh contacts
+      await fetchContacts();
+      return true;
+
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile aggiungere il contatto',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const deleteContact = async (contactId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('user_id', userId)
+        .eq('contact_user_id', contactId);
+
+      if (error) {
+        console.error('Error deleting contact:', error);
+        return false;
+      }
+
+      // Refresh contacts
+      await fetchContacts();
+      return true;
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      fetchContacts();
+    }
+  }, [userId]);
+
+  return {
+    contacts,
+    isLoading,
+    addContact,
+    deleteContact,
+    refreshContacts: fetchContacts,
+  };
+};

@@ -7,9 +7,9 @@ import { SwipeablePages } from "@/components/navigation/SwipeablePages";
 import { StatusPage } from "./StatusPage";
 import { CallsPage } from "./CallsPage";
 import { SettingsPage } from "./SettingsPage";
-import { useUserId } from "@/hooks/useUserId";
+import { useAuth } from "@/hooks/useAuth";
+import { useContacts, Contact } from "@/hooks/useContacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useToast } from "@/hooks/use-toast";
 
 interface Contact {
   id: string;
@@ -18,82 +18,60 @@ interface Contact {
   timestamp?: Date;
   unreadCount?: number;
   isOnline?: boolean;
+  conversationId?: string;
 }
 
 const Index = () => {
-  const { userId } = useUserId();
-  const { profile, updateName } = useUserProfile(userId);
-  const { toast } = useToast();
+  const { isAuthenticated, isLoading, userId } = useAuth();
+  const { contacts, addContact, deleteContact } = useContacts(userId || '');
+  const { profile, updateName } = useUserProfile(userId || '');
   const [currentPage, setCurrentPage] = useState(1); // Start with Chat page
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      id: 'DEMO1234',
-      name: 'Demo Contact',
-      lastMessage: 'Messaggio di prova per testare l\'interfaccia',
-      timestamp: new Date(Date.now() - 300000),
-      unreadCount: 2,
-      isOnline: true
-    }
-  ]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const handleAddContact = (contactId: string, contactName: string) => {
-    // Controlla se il contatto esiste già
-    const existingContact = contacts.find(c => c.id === contactId);
-    if (existingContact) {
-      toast({
-        title: "Contatto già esistente",
-        description: `${contactName} è già nei tuoi contatti`,
-        variant: "destructive",
-      });
-      return;
+  const handleAddContact = async (contactId: string, contactName: string) => {
+    const success = await addContact(contactId, contactName);
+    if (success) {
+      setShowAddContact(false);
     }
-
-    const newContact: Contact = {
-      id: contactId,
-      name: contactName,
-      isOnline: Math.random() > 0.5, // Simula stato online casuale
-    };
-
-    setContacts(prev => [...prev, newContact]);
-    toast({
-      title: "Contatto aggiunto!",
-      description: `${contactName} è stato aggiunto ai tuoi contatti`,
-    });
   };
 
-  const handleDeleteContact = (contactId: string) => {
-    setContacts(prev => prev.filter(contact => contact.id !== contactId));
+  const handleDeleteContact = async (contactId: string) => {
+    await deleteContact(contactId);
     // If the deleted contact is currently selected, go back to list
     if (selectedContact && selectedContact.id === contactId) {
       setSelectedContact(null);
     }
-    toast({
-      title: "Chat eliminata",
-      description: "La chat è stata eliminata con successo",
-    });
   };
 
   const handleContactSelect = (contact: Contact) => {
     setSelectedContact(contact);
     // Reset unread count quando si apre la chat
-    setContacts(prev =>
-      prev.map(c => c.id === contact.id ? { ...c, unreadCount: 0 } : c)
-    );
+    // This will be handled by the useContacts hook in the future
   };
 
   const handleBackToList = () => {
     setSelectedContact(null);
   };
 
-  if (!userId) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="w-16 h-16 bg-whatsapp-green rounded-full animate-pulse mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Generazione ID utente...</p>
+          <div className="w-16 h-16 bg-relay-primary rounded-full animate-pulse mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Caricamento...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !userId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-relay-primary rounded-full animate-pulse mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Connessione in corso...</p>
         </div>
       </div>
     );
@@ -118,7 +96,7 @@ const Index = () => {
             onAddContact={() => setShowAddContact(true)}
             onOpenSettings={() => setShowSettings(true)}
             onDeleteContact={handleDeleteContact}
-            userProfile={profile}
+            userProfile={profile || { name: 'Loading...', id: userId }}
           />
         )}
         <CallsPage />
