@@ -136,7 +136,7 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
         {children.map((child, index) => (
           <div 
             key={index}
-            className="flex-shrink-0 w-full h-full"
+            className="flex-shrink-0 w-full h-full overflow-y-auto"
             style={{ minWidth: '100%' }}
           >
             {child}
