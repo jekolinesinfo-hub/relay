@@ -142,7 +142,7 @@ const handleMouseStart = (e: React.MouseEvent) => {
         {children.map((child, index) => (
           <div 
             key={index}
-            className="flex-shrink-0 w-full h-full min-h-0 overflow-auto"
+            className="flex-shrink-0 w-full h-full min-h-0 overflow-hidden"
             style={{ minWidth: '100%' }}
           >
             {child}
