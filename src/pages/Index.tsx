@@ -65,7 +65,7 @@ const Index = () => {
   }
 
   return (
-    <div className="h-screen bg-background overflow-hidden">
+    <div className="h-[100dvh] max-h-[100dvh] bg-background overflow-hidden">
       <SwipeablePages 
         currentPage={currentPage} 
         onPageChange={setCurrentPage}

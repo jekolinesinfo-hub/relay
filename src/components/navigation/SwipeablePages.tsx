@@ -95,7 +95,7 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden">
+    <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-background overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* Navigation dots */}
       <div className="flex justify-center gap-2 py-2 bg-gradient-to-r from-relay-primary to-relay-secondary">
         {pages.map((page, index) => {
@@ -120,7 +120,7 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
       {/* Swipeable content */}
       <div 
         ref={containerRef}
-        className="flex flex-1 touch-pan-x select-none"
+        className="flex flex-1 min-h-0 touch-pan-x select-none"
         style={{
           transform: `translateX(${translateX}%)`,
           transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -136,7 +136,7 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
         {children.map((child, index) => (
           <div 
             key={index}
-            className="flex-shrink-0 w-full h-full overflow-y-auto"
+            className="flex-shrink-0 w-full h-full min-h-0 overflow-hidden"
             style={{ minWidth: '100%' }}
           >
             {child}
