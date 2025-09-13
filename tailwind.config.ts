@@ -47,6 +47,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Relay modern colors
+        relay: {
+          primary: "hsl(var(--relay-primary))",
+          secondary: "hsl(var(--relay-secondary))", 
+          accent: "hsl(var(--relay-accent))",
+          dark: "hsl(var(--relay-dark))",
+        },
         // WhatsApp specific colors
         whatsapp: {
           green: "hsl(var(--whatsapp-green))",

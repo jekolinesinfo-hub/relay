@@ -53,7 +53,7 @@ export const ChatList = ({
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <header className="bg-whatsapp-green px-4 py-3 text-white">
+      <header className="bg-gradient-to-r from-relay-primary to-relay-secondary px-4 py-3 text-white shadow-lg">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Relay</h1>
           <div className="flex items-center gap-2">

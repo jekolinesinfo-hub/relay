@@ -11,7 +11,7 @@ interface ChatHeaderProps {
 
 export const ChatHeader = ({ contactName, contactId, isOnline, onBack }: ChatHeaderProps) => {
   return (
-    <header className="bg-whatsapp-green px-4 py-3 flex items-center justify-between shadow-md">
+    <header className="bg-gradient-to-r from-relay-primary to-relay-secondary px-4 py-3 flex items-center justify-between shadow-lg text-white">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"

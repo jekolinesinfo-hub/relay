@@ -6,6 +6,12 @@
 
 @layer base {
   :root {
+    /* Modern App Colors */
+    --relay-primary: 258 90% 66%;      /* Purple-blue gradient primary */
+    --relay-secondary: 245 100% 70%;   /* Bright blue */
+    --relay-accent: 285 85% 75%;       /* Light purple */
+    --relay-dark: 258 90% 55%;         /* Darker variant */
+    
     /* WhatsApp Color Palette */
     --whatsapp-green: 142 70% 49%;
     --whatsapp-green-dark: 142 70% 42%;
@@ -117,10 +123,11 @@
 
 /* Custom Gradients and Animations */
 :root {
+  --gradient-relay: linear-gradient(135deg, hsl(var(--relay-primary)), hsl(var(--relay-secondary)));
   --gradient-whatsapp: linear-gradient(135deg, hsl(var(--whatsapp-green)), hsl(var(--whatsapp-teal)));
   --gradient-chat: linear-gradient(180deg, hsl(var(--whatsapp-green-light)), hsl(var(--background)));
   --shadow-message: 0 1px 2px rgba(0, 0, 0, 0.1);
-  --shadow-floating: 0 4px 12px rgba(37, 211, 102, 0.3);
+  --shadow-floating: 0 4px 12px rgba(139, 92, 246, 0.3);
   --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
