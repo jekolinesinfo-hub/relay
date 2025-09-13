@@ -20,6 +20,11 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
 
+  const isInteractiveTarget = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return false;
+    return !!target.closest('input, textarea, select, button, [role="button"], [contenteditable="true"]');
+  };
+
   useEffect(() => {
     if (containerRef.current) {
       const newTranslateX = -currentPage * 100;
@@ -27,7 +32,8 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
     }
   }, [currentPage]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+const handleTouchStart = (e: React.TouchEvent) => {
+    if (isInteractiveTarget(e.target)) return;
     setIsDragging(true);
     setStartX(e.touches[0].clientX);
   };
@@ -60,10 +66,10 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
     setTranslateX(-currentPage * 100);
   };
 
-  const handleMouseStart = (e: React.MouseEvent) => {
+const handleMouseStart = (e: React.MouseEvent) => {
+    if (isInteractiveTarget(e.target)) return;
     setIsDragging(true);
     setStartX(e.clientX);
-    e.preventDefault();
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -120,7 +126,7 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
       {/* Swipeable content */}
       <div 
         ref={containerRef}
-        className="flex flex-1 min-h-0 touch-pan-x select-none"
+        className="flex flex-1 min-h-0 touch-pan-x"
         style={{
           transform: `translateX(${translateX}%)`,
           transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -136,7 +142,7 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
         {children.map((child, index) => (
           <div 
             key={index}
-            className="flex-shrink-0 w-full h-full min-h-0 overflow-hidden"
+            className="flex-shrink-0 w-full h-full min-h-0 overflow-auto"
             style={{ minWidth: '100%' }}
           >
             {child}
