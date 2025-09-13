@@ -2,39 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* WhatsApp-inspired Chat App Design System */
 
 @layer base {
   :root {
+    /* WhatsApp Color Palette */
+    --whatsapp-green: 142 70% 49%;
+    --whatsapp-green-dark: 142 70% 42%;
+    --whatsapp-green-light: 142 70% 96%;
+    --whatsapp-teal: 180 100% 25%;
+    
+    /* Chat Colors */
+    --chat-background: 38 12% 91%;
+    --chat-bubble-sent: 142 70% 49%;
+    --chat-bubble-received: 0 0% 100%;
+    --chat-bubble-sent-dark: 142 70% 42%;
+    --chat-input: 0 0% 95%;
+    
+    /* Base Colors */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --foreground: 0 0% 13%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 0 0% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 13%;
+    
+    /* Primary (WhatsApp Green) */
+    --primary: 142 70% 49%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 13%;
+    
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    
+    --accent: 142 70% 96%;
+    --accent-foreground: 142 70% 42%;
+    
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 90%;
+    --input: 0 0% 95%;
+    --ring: 142 70% 49%;
 
     --radius: 0.5rem;
 
@@ -56,33 +67,43 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* Dark WhatsApp Theme */
+    --whatsapp-green: 142 70% 49%;
+    --whatsapp-green-dark: 142 70% 42%;
+    --whatsapp-green-light: 142 70% 15%;
+    --whatsapp-teal: 180 100% 25%;
+    
+    --chat-background: 0 0% 7%;
+    --chat-bubble-sent: 142 70% 49%;
+    --chat-bubble-received: 0 0% 13%;
+    --chat-bubble-sent-dark: 142 70% 42%;
+    --chat-input: 0 0% 15%;
+    
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    
+    --primary: 142 70% 49%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
+    
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    
+    --accent: 142 70% 15%;
+    --accent-foreground: 142 70% 60%;
+    
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 142 70% 49%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -94,12 +115,56 @@ All colors MUST be HSL.
   }
 }
 
+/* Custom Gradients and Animations */
+:root {
+  --gradient-whatsapp: linear-gradient(135deg, hsl(var(--whatsapp-green)), hsl(var(--whatsapp-teal)));
+  --gradient-chat: linear-gradient(180deg, hsl(var(--whatsapp-green-light)), hsl(var(--background)));
+  --shadow-message: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-floating: 0 4px 12px rgba(37, 211, 102, 0.3);
+  --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark {
+  --gradient-chat: linear-gradient(180deg, hsl(var(--whatsapp-green-light)), hsl(var(--background)));
+  --shadow-floating: 0 4px 12px rgba(37, 211, 102, 0.2);
+}
+
 @layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+  
+  /* Chat bubble animations */
+  .message-appear {
+    animation: messageAppear 0.3s ease-out;
+  }
+  
+  @keyframes messageAppear {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  /* Typing indicator */
+  .typing-dots {
+    animation: typing 1.4s infinite;
+  }
+  
+  @keyframes typing {
+    0%, 60%, 100% {
+      transform: translateY(0);
+    }
+    30% {
+      transform: translateY(-10px);
+    }
   }
 }

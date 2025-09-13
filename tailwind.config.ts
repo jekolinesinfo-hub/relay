@@ -15,7 +15,7 @@ export default {
     extend: {
       colors: {
         border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
+        input: "hsl(var(--input))",  
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -24,7 +24,7 @@ export default {
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
+          DEFAULT: "hsl(var(--secondary))", 
           foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
@@ -46,6 +46,20 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // WhatsApp specific colors
+        whatsapp: {
+          green: "hsl(var(--whatsapp-green))",
+          "green-dark": "hsl(var(--whatsapp-green-dark))", 
+          "green-light": "hsl(var(--whatsapp-green-light))",
+          teal: "hsl(var(--whatsapp-teal))",
+        },
+        chat: {
+          background: "hsl(var(--chat-background))",
+          "bubble-sent": "hsl(var(--chat-bubble-sent))",
+          "bubble-received": "hsl(var(--chat-bubble-received))",
+          "bubble-sent-dark": "hsl(var(--chat-bubble-sent-dark))",
+          input: "hsl(var(--chat-input))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
