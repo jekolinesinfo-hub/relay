@@ -4,19 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NetworkIndicator } from "@/components/network/NetworkIndicator";
 import { ChatItem } from "./ChatItem";
-
-interface Contact {
-  id: string;
-  name: string;
-  lastMessage?: string;
-  timestamp?: Date;
-  unreadCount?: number;
-  isOnline?: boolean;
-}
+import { DatabaseContact } from "@/hooks/useContacts";
 
 interface ChatListProps {
-  contacts: Contact[];
-  onContactSelect: (contact: Contact) => void;
+  contacts: DatabaseContact[];
+  onContactSelect: (contact: DatabaseContact) => void;
   onAddContact: () => void;
   onOpenSettings: () => void;
   onDeleteContact?: (contactId: string) => void;

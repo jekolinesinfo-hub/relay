@@ -8,25 +8,15 @@ import { StatusPage } from "./StatusPage";
 import { CallsPage } from "./CallsPage";
 import { SettingsPage } from "./SettingsPage";
 import { useAuth } from "@/hooks/useAuth";
-import { useContacts, Contact } from "@/hooks/useContacts";
+import { useContacts, DatabaseContact } from "@/hooks/useContacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
-
-interface Contact {
-  id: string;
-  name: string;
-  lastMessage?: string;
-  timestamp?: Date;
-  unreadCount?: number;
-  isOnline?: boolean;
-  conversationId?: string;
-}
 
 const Index = () => {
   const { isAuthenticated, isLoading, userId } = useAuth();
   const { contacts, addContact, deleteContact } = useContacts(userId || '');
   const { profile, updateName } = useUserProfile(userId || '');
-  const [currentPage, setCurrentPage] = useState(1); // Start with Chat page
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedContact, setSelectedContact] = useState<DatabaseContact | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -39,16 +29,13 @@ const Index = () => {
 
   const handleDeleteContact = async (contactId: string) => {
     await deleteContact(contactId);
-    // If the deleted contact is currently selected, go back to list
     if (selectedContact && selectedContact.id === contactId) {
       setSelectedContact(null);
     }
   };
 
-  const handleContactSelect = (contact: Contact) => {
+  const handleContactSelect = (contact: DatabaseContact) => {
     setSelectedContact(contact);
-    // Reset unread count quando si apre la chat
-    // This will be handled by the useContacts hook in the future
   };
 
   const handleBackToList = () => {

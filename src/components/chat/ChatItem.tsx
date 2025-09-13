@@ -1,19 +1,11 @@
 import { useState, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-interface Contact {
-  id: string;
-  name: string;
-  lastMessage?: string;
-  timestamp?: Date;
-  unreadCount?: number;
-  isOnline?: boolean;
-}
+import { DatabaseContact } from '@/hooks/useContacts';
 
 interface ChatItemProps {
-  contact: Contact;
-  onSelect: (contact: Contact) => void;
+  contact: DatabaseContact;
+  onSelect: (contact: DatabaseContact) => void;
   onDelete: (contactId: string) => void;
   formatTimestamp: (date?: Date) => string;
 }

@@ -4,16 +4,10 @@ import { ChatBubble } from "./ChatBubble";
 import { ChatInput } from "./ChatInput";
 import { useMessages, Message } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
-
-interface Contact {
-  id: string;
-  name: string;
-  isOnline?: boolean;
-  conversationId?: string;
-}
+import { DatabaseContact } from "@/hooks/useContacts";
 
 interface ChatViewProps {
-  contact: Contact;
+  contact: DatabaseContact;
   onBack: () => void;
 }
 

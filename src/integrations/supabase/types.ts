@@ -57,6 +57,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          last_message: string | null
+          last_message_at: string | null
           participant_1: string
           participant_2: string
           updated_at: string
@@ -64,6 +66,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_message?: string | null
+          last_message_at?: string | null
           participant_1: string
           participant_2: string
           updated_at?: string
@@ -71,6 +75,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_message?: string | null
+          last_message_at?: string | null
           participant_1?: string
           participant_2?: string
           updated_at?: string
@@ -140,21 +146,27 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          display_name: string | null
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           id: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

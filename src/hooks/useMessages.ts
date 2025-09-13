@@ -145,12 +145,11 @@ export const useMessages = (conversationId: string | null, userId: string) => {
         )
       );
 
-      // Update conversation last message
-      await supabase
+        await supabase
         .from('conversations')
         .update({
           last_message: text,
-          updated_at: new Date().toISOString(),
+          last_message_at: new Date().toISOString(),
         })
         .eq('id', conversationId);
 

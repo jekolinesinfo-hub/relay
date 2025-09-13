@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 
-export interface Contact {
+export interface DatabaseContact {
   id: string;
   name: string;
   lastMessage?: string;
@@ -13,7 +13,7 @@ export interface Contact {
 }
 
 export const useContacts = (userId: string) => {
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<DatabaseContact[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -25,13 +25,7 @@ export const useContacts = (userId: string) => {
       // Get all contacts for this user
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
-        .select(`
-          contact_user_id,
-          profiles!contacts_contact_user_id_fkey(
-            user_id,
-            display_name
-          )
-        `)
+        .select('contact_id, contact_name')
         .eq('user_id', userId);
 
       if (contactsError) {
@@ -43,7 +37,7 @@ export const useContacts = (userId: string) => {
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('conversations')
         .select('*')
-        .or(`participant1.eq.${userId},participant2.eq.${userId}`)
+        .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
         .order('updated_at', { ascending: false });
 
       if (conversationsError) {
@@ -51,29 +45,25 @@ export const useContacts = (userId: string) => {
         return;
       }
 
-      const formattedContacts: Contact[] = contactsData
+      const formattedContacts: DatabaseContact[] = contactsData
         .map((contact) => {
-          const profile = contact.profiles;
-          if (!profile) return null;
-
           // Find conversation with this contact
           const conversation = conversationsData.find(
             (conv) =>
-              (conv.participant1 === userId && conv.participant2 === profile.user_id) ||
-              (conv.participant2 === userId && conv.participant1 === profile.user_id)
+              (conv.participant_1 === userId && conv.participant_2 === contact.contact_id) ||
+              (conv.participant_2 === userId && conv.participant_1 === contact.contact_id)
           );
 
           return {
-            id: profile.user_id,
-            name: profile.display_name || 'Unknown User',
+            id: contact.contact_id,
+            name: contact.contact_name || 'Unknown User',
             lastMessage: conversation?.last_message || '',
             timestamp: conversation ? new Date(conversation.updated_at) : undefined,
-            unreadCount: 0, // TODO: Implement unread count
-            isOnline: Math.random() > 0.5, // Random online status for demo
+            unreadCount: 0,
+            isOnline: Math.random() > 0.5,
             conversationId: conversation?.id,
           };
         })
-        .filter((contact): contact is Contact => contact !== null)
         .sort((a, b) => {
           if (!a.timestamp) return 1;
           if (!b.timestamp) return -1;
@@ -88,16 +78,16 @@ export const useContacts = (userId: string) => {
     }
   };
 
-  const addContact = async (contactId: string, contactName?: string) => {
+  const addContact = async (contactId: string, contactName: string) => {
     try {
       // Check if contact profile exists
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', contactId)
-        .single();
+        .eq('id', contactId)
+        .maybeSingle();
 
-      if (profileError && profileError.code === 'PGRST116') {
+      if (!profileData && (!profileError || profileError.code === 'PGRST116')) {
         toast({
           title: 'Utente non trovato',
           description: `L'ID ${contactId} non corrisponde a nessun utente registrato`,
@@ -106,7 +96,7 @@ export const useContacts = (userId: string) => {
         return false;
       }
 
-      if (profileError) {
+      if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error checking profile:', profileError);
         return false;
       }
@@ -116,8 +106,8 @@ export const useContacts = (userId: string) => {
         .from('contacts')
         .select('*')
         .eq('user_id', userId)
-        .eq('contact_user_id', contactId)
-        .single();
+        .eq('contact_id', contactId)
+        .maybeSingle();
 
       if (existingContact) {
         toast({
@@ -131,12 +121,11 @@ export const useContacts = (userId: string) => {
       // Add contact
       const { error: addError } = await supabase
         .from('contacts')
-        .insert([
-          {
-            user_id: userId,
-            contact_user_id: contactId,
-          }
-        ]);
+        .insert({
+          user_id: userId,
+          contact_id: contactId,
+          contact_name: contactName || profileData?.name || `User ${contactId}`,
+        });
 
       if (addError) {
         console.error('Error adding contact:', addError);
@@ -153,25 +142,23 @@ export const useContacts = (userId: string) => {
         .from('conversations')
         .select('*')
         .or(`
-          and(participant1.eq.${userId},participant2.eq.${contactId}),
-          and(participant1.eq.${contactId},participant2.eq.${userId})
+          and(participant_1.eq.${userId},participant_2.eq.${contactId}),
+          and(participant_1.eq.${contactId},participant_2.eq.${userId})
         `)
-        .single();
+        .maybeSingle();
 
       if (!existingConversation) {
         await supabase
           .from('conversations')
-          .insert([
-            {
-              participant1: userId,
-              participant2: contactId,
-            }
-          ]);
+          .insert({
+            participant_1: userId,
+            participant_2: contactId,
+          });
       }
 
       toast({
         title: 'Contatto aggiunto!',
-        description: `${profileData.display_name || contactId} è stato aggiunto ai tuoi contatti`,
+        description: `${contactName} è stato aggiunto ai tuoi contatti`,
       });
 
       // Refresh contacts
@@ -195,7 +182,7 @@ export const useContacts = (userId: string) => {
         .from('contacts')
         .delete()
         .eq('user_id', userId)
-        .eq('contact_user_id', contactId);
+        .eq('contact_id', contactId);
 
       if (error) {
         console.error('Error deleting contact:', error);

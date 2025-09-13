@@ -18,19 +18,19 @@ export const useAuth = () => {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('user_id', userId)
-          .single();
+          .eq('id', userId)
+          .maybeSingle();
 
-        if (error && error.code === 'PGRST116') {
+        if (!profile && (!error || error.code === 'PGRST116')) {
           // Profile doesn't exist, create it
           const { error: insertError } = await supabase
             .from('profiles')
-            .insert([
-              {
-                user_id: userId,
-                display_name: 'Relay User',
-              }
-            ]);
+            .insert({
+              id: userId,
+              name: 'Relay User',
+              user_id: userId,
+              display_name: 'Relay User',
+            });
 
           if (insertError) {
             console.error('Error creating profile:', insertError);
@@ -46,7 +46,7 @@ export const useAuth = () => {
               description: 'Profilo creato con successo',
             });
           }
-        } else if (!error) {
+        } else if (profile) {
           setIsAuthenticated(true);
         } else {
           console.error('Error checking profile:', error);
@@ -63,8 +63,6 @@ export const useAuth = () => {
 
   const signOut = async () => {
     setIsAuthenticated(false);
-    // We don't actually sign out from Supabase auth since we're using local IDs
-    // Just reset the local state
   };
 
   return {
