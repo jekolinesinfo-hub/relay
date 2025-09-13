@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Copy, Check } from "lucide-react";
+import { UserPlus, Copy, Check, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useContacts } from "@/hooks/useContacts";
 
 interface AddContactModalProps {
   open: boolean;
@@ -17,7 +18,47 @@ export const AddContactModal = ({ open, onClose, onAddContact, userId }: AddCont
   const [contactId, setContactId] = useState("");
   const [contactName, setContactName] = useState("");
   const [copied, setCopied] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
+  const { searchUserByIdPartial } = useContacts(userId);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    if (contactId.length >= 2) {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      
+      searchTimeoutRef.current = setTimeout(async () => {
+        const results = await searchUserByIdPartial(contactId.toUpperCase());
+        setSearchResults(results);
+        setShowResults(results.length > 0);
+      }, 300);
+    } else {
+      setSearchResults([]);
+      setShowResults(false);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [contactId, searchUserByIdPartial]);
+
+  const handleContactIdChange = (value: string) => {
+    setContactId(value.toUpperCase());
+    if (value.length < 2) {
+      setShowResults(false);
+    }
+  };
+
+  const handleSelectUser = (user: any) => {
+    setContactId(user.id);
+    setContactName(user.name || user.display_name || user.id);
+    setShowResults(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +84,7 @@ export const AddContactModal = ({ open, onClose, onAddContact, userId }: AddCont
     onAddContact(contactId.trim().toUpperCase(), contactName.trim());
     setContactId("");
     setContactName("");
+    setShowResults(false);
     onClose();
   };
 
@@ -93,16 +135,39 @@ export const AddContactModal = ({ open, onClose, onAddContact, userId }: AddCont
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+            <div className="relative">
               <Label htmlFor="contactId">ID Contatto</Label>
               <Input
                 id="contactId"
                 value={contactId}
-                onChange={(e) => setContactId(e.target.value.toUpperCase())}
-                placeholder="es. ABC12345"
+                onChange={(e) => handleContactIdChange(e.target.value)}
+                placeholder="es. ABC12345 (digita per cercare)"
                 className="font-mono text-lg"
                 maxLength={8}
+                autoComplete="off"
               />
+              
+              {/* Search Results Dropdown */}
+              {showResults && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => handleSelectUser(user)}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-left border-b border-border/50 last:border-b-0"
+                    >
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div className="font-mono text-sm font-medium">{user.id}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {user.name || user.display_name || 'Utente senza nome'}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             
             <div>

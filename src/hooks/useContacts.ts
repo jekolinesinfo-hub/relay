@@ -204,11 +204,34 @@ export const useContacts = (userId: string) => {
     }
   }, [userId]);
 
+  const searchUserByIdPartial = async (partialId: string) => {
+    if (!partialId || partialId.length < 2) return [];
+    
+    try {
+      const { data: profilesData, error } = await supabase
+        .from('profiles')
+        .select('id, name, display_name')
+        .ilike('id', `${partialId}%`)
+        .limit(5);
+
+      if (error) {
+        console.error('Error searching users:', error);
+        return [];
+      }
+
+      return profilesData || [];
+    } catch (error) {
+      console.error('Error searching users:', error);
+      return [];
+    }
+  };
+
   return {
     contacts,
     isLoading,
     addContact,
     deleteContact,
     refreshContacts: fetchContacts,
+    searchUserByIdPartial,
   };
 };

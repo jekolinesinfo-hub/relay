@@ -26,12 +26,12 @@ export const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
   };
 
   return (
-    <div className="bg-background border-t px-4 py-3">
+    <div className="bg-background border-t px-4 py-3 safe-area-inset-bottom">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground hover:text-whatsapp-green p-2 h-auto"
+          className="text-muted-foreground hover:text-whatsapp-green p-2 h-auto flex-shrink-0"
         >
           <Paperclip className="h-5 w-5" />
         </Button>
@@ -42,8 +42,12 @@ export const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Scrivi un messaggio..."
-            className="bg-chat-input border-none rounded-full pr-12 focus-visible:ring-whatsapp-green"
+            className="bg-chat-input border-none rounded-full pr-12 focus-visible:ring-whatsapp-green text-base min-h-[44px]"
             disabled={disabled}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
           />
           
           {message.trim() ? (
