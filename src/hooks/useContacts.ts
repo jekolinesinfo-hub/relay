@@ -19,6 +19,29 @@ export const useContacts = (userId: string) => {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
+  // Persisted unread counts per user
+  const unreadKey = `unread_counts_${userId}`;
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(unreadKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, number>;
+        setUnreadCounts(parsed);
+      }
+    } catch (e) {
+      console.warn('Failed to load unread counts from localStorage', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const persistUnread = (map: Record<string, number>) => {
+    try {
+      localStorage.setItem(unreadKey, JSON.stringify(map));
+    } catch (e) {
+      console.warn('Failed to persist unread counts', e);
+    }
+  };
+
   // Hidden (dismissed) chats per user, persisted locally
   const [hiddenChats, setHiddenChats] = useState<Set<string>>(new Set());
   const hiddenKey = `hidden_chats_${userId}`;
@@ -292,6 +315,16 @@ export const useContacts = (userId: string) => {
         return next;
       });
 
+      // Clear unread counter for this contact
+      setUnreadCounts(prev => {
+        const updated = { ...prev };
+        if (updated[contactId] != null) {
+          delete updated[contactId];
+          persistUnread(updated);
+        }
+        return updated;
+      });
+
       // Optimistically remove from current list
       setContacts(prev => prev.filter(c => c.id !== contactId));
 
@@ -329,6 +362,7 @@ export const useContacts = (userId: string) => {
                 [senderId]: (prev[senderId] || 0) + 1
               };
               console.log('[Contacts] Updated unread counts:', updated);
+              persistUnread(updated);
               return updated;
             });
 
@@ -413,6 +447,7 @@ export const useContacts = (userId: string) => {
       const updated = { ...prev };
       delete updated[contactId];
       console.log('[Contacts] Cleared unread for', contactId, 'new state:', updated);
+      persistUnread(updated);
       return updated;
     });
     // Update the specific contact in the list
