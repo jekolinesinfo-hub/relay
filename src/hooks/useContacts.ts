@@ -141,6 +141,7 @@ export const useContacts = (userId: string) => {
         return bt - at;
       });
 
+      console.log('[Contacts] Formatted contacts with unread counts:', formattedContacts.map(c => ({ id: c.id, name: c.name, unread: c.unreadCount, hasNew: c.hasNewMessage })));
       setContacts(formattedContacts);
     } catch (error) {
       console.error('Error fetching contacts:', error);
@@ -290,6 +291,7 @@ export const useContacts = (userId: string) => {
                 payload.new.sender_id !== userId) {
               // This is a message for current user from someone else
               const senderId = payload.new.sender_id;
+              console.log('[Contacts] New message for current user from', senderId, 'payload:', payload.new);
               setUnreadCounts(prev => ({
                 ...prev,
                 [senderId]: (prev[senderId] || 0) + 1
