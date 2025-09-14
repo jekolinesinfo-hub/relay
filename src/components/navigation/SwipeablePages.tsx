@@ -101,8 +101,31 @@ const handleMouseStart = (e: React.MouseEvent) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* Swipeable content only (header handled at layout level) */}
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden overscroll-contain pb-[env(safe-area-inset-bottom)]">
+      {/* Top navigation - fixed */}
+      <div className="fixed top-0 left-0 right-0 z-40 h-14 pt-[env(safe-area-inset-top)] flex justify-center items-center gap-2 bg-gradient-to-r from-relay-primary to-relay-secondary">
+        {pages.map((page, index) => {
+          const IconComponent = page.icon;
+          return (
+            <button
+              key={index}
+              onClick={() => onPageChange(index)}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
+                currentPage === index 
+                  ? 'bg-white/20 text-white' 
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <IconComponent className="w-5 h-5" />
+              <span className="text-xs font-medium">{page.name}</span>
+            </button>
+          );
+        })}
+      </div>
+      {/* Spacer to offset fixed top bar */}
+      <div className="h-14 pt-[env(safe-area-inset-top)]" aria-hidden="true" />
+
+      {/* Swipeable content */}
       <div 
         ref={containerRef}
         className="flex flex-1 min-h-0 touch-pan-x"
