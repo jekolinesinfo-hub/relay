@@ -28,7 +28,7 @@ export const ChatItem = ({ contact, onSelect, onDelete, formatTimestamp }: ChatI
     const diff = clientX - startX.current;
     const maxSwipe = 80; // Maximum swipe distance
     
-    // Only allow left swipe (negative values)
+    // Only allow left swipe (negative values) and limit vertical scroll interference
     if (diff <= 0) {
       const newTranslateX = Math.max(diff, -maxSwipe);
       setTranslateX(newTranslateX);
@@ -54,10 +54,17 @@ export const ChatItem = ({ contact, onSelect, onDelete, formatTimestamp }: ChatI
 
   const handleTouchStart = (e: React.TouchEvent) => {
     handleStart(e.touches[0].clientX);
+    // Prevent page scroll during swipe
+    e.preventDefault();
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    handleMove(e.touches[0].clientX);
+    if (isDragging) {
+      handleMove(e.touches[0].clientX);
+      // Prevent page scroll during swipe
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   const handleTouchEnd = () => {
@@ -70,7 +77,11 @@ export const ChatItem = ({ contact, onSelect, onDelete, formatTimestamp }: ChatI
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    handleMove(e.clientX);
+    if (isDragging) {
+      handleMove(e.clientX);
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   const handleMouseUp = () => {
@@ -113,7 +124,7 @@ export const ChatItem = ({ contact, onSelect, onDelete, formatTimestamp }: ChatI
       {/* Chat item */}
       <div
         ref={containerRef}
-        className="relative bg-background border-b hover:bg-accent/50 cursor-pointer transition-colors"
+        className="relative bg-background border-b hover:bg-accent/50 cursor-pointer transition-colors touch-pan-y"
         style={{
           transform: `translateX(${translateX}px)`,
           transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
