@@ -19,6 +19,28 @@ export const useContacts = (userId: string) => {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
+  // Hidden (dismissed) chats per user, persisted locally
+  const [hiddenChats, setHiddenChats] = useState<Set<string>>(new Set());
+  const hiddenKey = `hidden_chats_${userId}`;
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(hiddenKey);
+      if (raw) setHiddenChats(new Set(JSON.parse(raw)));
+    } catch (e) {
+      console.warn('Failed to load hidden chats from localStorage', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const persistHidden = (ids: Set<string>) => {
+    try {
+      localStorage.setItem(hiddenKey, JSON.stringify(Array.from(ids)));
+    } catch (e) {
+      console.warn('Failed to persist hidden chats', e);
+    }
+  };
+
   const fetchContacts = async () => {
     if (!userId) return;
     setIsLoading(true);
@@ -141,8 +163,9 @@ export const useContacts = (userId: string) => {
         return bt - at;
       });
 
-      console.log('[Contacts] Formatted contacts with unread counts:', formattedContacts.map(c => ({ id: c.id, name: c.name, unread: c.unreadCount, hasNew: c.hasNewMessage })));
-      setContacts(formattedContacts);
+      const visibleContacts = formattedContacts.filter(contact => !hiddenChats.has(contact.id));
+      console.log('[Contacts] Visible contacts after hidden filter:', visibleContacts.map(c => ({ id: c.id, name: c.name, unread: c.unreadCount, hasNew: c.hasNewMessage })));
+      setContacts(visibleContacts);
     } catch (error) {
       console.error('Error fetching contacts:', error);
     } finally {
@@ -257,12 +280,20 @@ export const useContacts = (userId: string) => {
         .eq('contact_id', contactId);
 
       if (error) {
-        console.error('Error deleting contact:', error);
-        return false;
+        console.warn('Delete in contacts failed or not present, hiding locally instead:', error);
       }
 
-      // Refresh contacts
-      await fetchContacts();
+      // Hide chat locally so it disappears from the list even if it's a virtual contact
+      setHiddenChats(prev => {
+        const next = new Set(prev);
+        next.add(contactId);
+        persistHidden(next);
+        return next;
+      });
+
+      // Optimistically remove from current list
+      setContacts(prev => prev.filter(c => c.id !== contactId));
+
       return true;
     } catch (error) {
       console.error('Error deleting contact:', error);
