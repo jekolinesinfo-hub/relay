@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { ChatHeader } from "./ChatHeader";
 import { ChatBubble } from "./ChatBubble";
 import { ChatInput } from "./ChatInput";
@@ -16,13 +16,23 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
   const { userId } = useAuth();
   const { messages, sendMessage } = useMessages(contact.conversationId || null, userId || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isInitialLoad = useRef(true);
 
   const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "instant" });
+    if (smooth) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      const el = messagesContainerRef.current;
+      if (el) {
+        el.scrollTop = el.scrollHeight;
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }
+    }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isInitialLoad.current) {
       // Jump instantly to bottom on first load
       scrollToBottom(false);
@@ -33,8 +43,11 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
     }
   }, [messages]);
 
-  // Auto-save contact when opening a chat if not already in contacts
+// Auto-save contact when opening a chat if not already in contacts
   useEffect(() => {
+    // Reset scroll behavior for new chat
+    isInitialLoad.current = true;
+
     if (!userId || !contact?.id) return;
     (async () => {
       const { data, error } = await supabase
@@ -72,6 +85,7 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
       
       {/* Messages Area */}
       <div 
+        ref={messagesContainerRef}
         className="flex-1 min-h-0 overflow-y-auto px-2 py-2"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f5f5f5' fill-opacity='0.3'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10zm10 0c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10z'/%3E%3C/g%3E%3C/svg%3E")`,
