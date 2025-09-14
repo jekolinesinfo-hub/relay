@@ -368,6 +368,23 @@ export const useContacts = (userId: string) => {
     }
   }, [unreadCounts, userId]);
 
+  // Re-apply hidden chats filter and refetch when hidden set changes
+  useEffect(() => {
+    if (!userId) return;
+    // Optimistically filter current list
+    setContacts(prev => prev.filter(c => !hiddenChats.has(c.id)));
+    // Optionally refresh from server to sync conv info
+    fetchContacts();
+  }, [hiddenChats, userId]);
+
+  // Reflect unreadCounts immediately in the current list (no server roundtrip)
+  useEffect(() => {
+    setContacts(prev => prev.map(c => {
+      const count = unreadCounts[c.id] || 0;
+      return { ...c, unreadCount: count, hasNewMessage: count > 0 };
+    }));
+  }, [unreadCounts]);
+
   const searchUserByIdPartial = useCallback(async (partialId: string) => {
     if (!partialId || partialId.length < 2) return [];
     
