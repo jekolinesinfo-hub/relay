@@ -297,25 +297,49 @@ export const useContacts = (userId: string) => {
 
   const deleteContact = async (contactId: string) => {
     try {
-      const { error } = await supabase
+      // 1) Delete any direct contact row (if exists)
+      const { error: contactDelErr } = await supabase
         .from('contacts')
         .delete()
         .eq('user_id', userId)
         .eq('contact_id', contactId);
-
-      if (error) {
-        console.warn('Delete in contacts failed or not present, hiding locally instead:', error);
+      if (contactDelErr) {
+        console.warn('Delete in contacts failed or not present:', contactDelErr);
       }
 
-      // Hide chat locally so it disappears from the list even if it's a virtual contact
-      setHiddenChats(prev => {
-        const next = new Set(prev);
-        next.add(contactId);
-        persistHidden(next);
-        return next;
-      });
+      // 2) Find all conversations between the two users
+      const { data: convs, error: convErr } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(participant_1.eq.${userId},participant_2.eq.${contactId}),and(participant_1.eq.${contactId},participant_2.eq.${userId})`);
 
-      // Clear unread counter for this contact
+      if (convErr) {
+        console.error('Error fetching conversations for deletion:', convErr);
+      }
+
+      const convIds = (convs || []).map((c: any) => c.id);
+
+      if (convIds.length > 0) {
+        // 3) Delete all messages in those conversations
+        const { error: msgErr } = await supabase
+          .from('messages')
+          .delete()
+          .in('conversation_id', convIds);
+        if (msgErr) {
+          console.error('Error deleting messages for conversation(s):', msgErr);
+        }
+
+        // 4) Delete the conversation records
+        const { error: delConvErr } = await supabase
+          .from('conversations')
+          .delete()
+          .in('id', convIds);
+        if (delConvErr) {
+          console.error('Error deleting conversations:', delConvErr);
+        }
+      }
+
+      // 5) Clear unread counter for this contact
       setUnreadCounts(prev => {
         const updated = { ...prev };
         if (updated[contactId] != null) {
@@ -325,8 +349,17 @@ export const useContacts = (userId: string) => {
         return updated;
       });
 
-      // Optimistically remove from current list
+      // 6) Remove from UI and hide locally to prevent reappearing
+      setHiddenChats(prev => {
+        const next = new Set(prev);
+        next.add(contactId);
+        persistHidden(next);
+        return next;
+      });
       setContacts(prev => prev.filter(c => c.id !== contactId));
+
+      // 7) Final refresh to ensure server state is synced
+      await fetchContacts();
 
       return true;
     } catch (error) {
@@ -381,6 +414,9 @@ export const useContacts = (userId: string) => {
               persistHidden(next);
               return next;
             });
+
+            // Refresh from server to ensure consistency
+            await fetchContacts();
           }
           // Rely on unreadCounts effect to refresh contacts
         })
@@ -441,8 +477,29 @@ export const useContacts = (userId: string) => {
     }
   }, []);
 
-  const markAsRead = (contactId: string) => {
+  const markAsRead = async (contactId: string) => {
     console.log('[Contacts] Marking as read for contact:', contactId);
+
+    // DB: mark all partner's messages in this conversation as read
+    try {
+      const { data: conv, error: convErr } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(participant_1.eq.${userId},participant_2.eq.${contactId}),and(participant_1.eq.${contactId},participant_2.eq.${userId})`)
+        .order('updated_at', { ascending: false })
+        .maybeSingle();
+
+      if (conv && !convErr) {
+        await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('conversation_id', conv.id)
+          .neq('sender_id', userId);
+      }
+    } catch (e) {
+      console.warn('[Contacts] Failed to mark messages as read in DB', e);
+    }
+
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[contactId];
