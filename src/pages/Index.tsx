@@ -73,7 +73,7 @@ const Index = () => {
   }
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] bg-background overflow-hidden flex flex-col">
+    <div className="h-full max-h-full bg-background overflow-hidden flex flex-col">
       {/* Top navigation - fixed, global */}
       <div className="fixed top-0 left-0 right-0 z-40 h-14 pt-[env(safe-area-inset-top)] flex justify-center items-center gap-2 bg-gradient-to-r from-relay-primary to-relay-secondary">
         {pages.map((page, index) => {

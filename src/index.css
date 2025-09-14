@@ -141,9 +141,16 @@
     @apply border-border;
   }
 
-  html, body, #root {
-    height: 100dvh;
-    max-height: 100dvh;
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    position: fixed;
+    inset: 0;
+    height: 100%;
+    max-height: none;
     overflow: hidden;
   }
 
