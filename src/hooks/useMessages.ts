@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
+import { playModernNotificationSound } from '@/utils/notificationSound';
 
 export interface Message {
   id: string;
@@ -90,10 +91,8 @@ export const useMessages = (conversationId: string | null, userId: string) => {
               duration: 3000,
             });
 
-            // Play notification sound
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxEw4fH');
-            audio.volume = 0.3;
-            audio.play().catch(e => console.log('Could not play notification sound:', e));
+            // Play modern notification sound
+            playModernNotificationSound();
 
             // Browser notification if tab is not active
             if (document.hidden && 'Notification' in window) {

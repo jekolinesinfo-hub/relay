@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
+import { playWhatsAppStyleSound } from '@/utils/notificationSound';
 
 export const useGlobalNotifications = (userId: string | null) => {
   const { toast } = useToast();
@@ -65,10 +66,8 @@ export const useGlobalNotifications = (userId: string | null) => {
                 duration: 5000,
               });
 
-              // Play notification sound
-              const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxEw4fH');
-              audio.volume = 0.4;
-              audio.play().catch(e => console.log('Could not play notification sound:', e));
+              // Play modern WhatsApp-style notification sound
+              playWhatsAppStyleSound();
 
               // Browser notification
               if ('Notification' in window) {
