@@ -12,10 +12,13 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
+  const startYRef = useRef(0);
+  const isSwipingRef = useRef(false);
   const [translateX, setTranslateX] = useState(0);
 
   const isInteractiveTarget = (target: EventTarget | null) => {
     if (!(target instanceof HTMLElement)) return false;
+    if (target.closest('[data-swipe-exempt="true"]')) return true;
     return !!target.closest('input, textarea, select, button, [role="button"], [contenteditable="true"]');
   };
 
@@ -26,71 +29,96 @@ export const SwipeablePages = ({ children, currentPage, onPageChange }: Swipeabl
     }
   }, [currentPage]);
 
-const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (isInteractiveTarget(e.target)) return;
     setIsDragging(true);
     setStartX(e.touches[0].clientX);
+    startYRef.current = e.touches[0].clientY;
+    isSwipingRef.current = false;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    
+
     const currentX = e.touches[0].clientX;
-    const diff = currentX - startX;
-    const newTranslateX = -currentPage * 100 + (diff / window.innerWidth) * 100;
+    const currentY = e.touches[0].clientY;
+    const dx = currentX - startX;
+    const dy = currentY - startYRef.current;
+
+    // Direction lock: only start horizontal swipe when dominant
+    if (!isSwipingRef.current) {
+      if (Math.abs(dx) < 16 || Math.abs(dx) <= Math.abs(dy) * 1.2) {
+        return; // treat as vertical scroll or minor movement
+      }
+      isSwipingRef.current = true;
+    }
+
+    e.preventDefault(); // prevent vertical scroll while swiping between pages
+    const newTranslateX = -currentPage * 100 + (dx / window.innerWidth) * 100;
     setTranslateX(newTranslateX);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    
+
     const endX = e.changedTouches[0].clientX;
-    const diff = endX - startX;
-    const threshold = window.innerWidth * 0.2; // 20% of screen width
-    
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0 && currentPage > 0) {
+    const dx = endX - startX;
+    const thresholdPx = Math.max(window.innerWidth * 0.35, 90); // less sensitive
+
+    if (isSwipingRef.current && Math.abs(dx) > thresholdPx) {
+      if (dx > 0 && currentPage > 0) {
         onPageChange(currentPage - 1);
-      } else if (diff < 0 && currentPage < children.length - 1) {
+      } else if (dx < 0 && currentPage < children.length - 1) {
         onPageChange(currentPage + 1);
       }
     }
-    
+
     setIsDragging(false);
+    isSwipingRef.current = false;
     setTranslateX(-currentPage * 100);
   };
 
-const handleMouseStart = (e: React.MouseEvent) => {
+  const handleMouseStart = (e: React.MouseEvent) => {
     if (isInteractiveTarget(e.target)) return;
     setIsDragging(true);
     setStartX(e.clientX);
+    startYRef.current = e.clientY;
+    isSwipingRef.current = false;
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    
-    const currentX = e.clientX;
-    const diff = currentX - startX;
-    const newTranslateX = -currentPage * 100 + (diff / window.innerWidth) * 100;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startYRef.current;
+
+    if (!isSwipingRef.current) {
+      if (Math.abs(dx) < 8 || Math.abs(dx) <= Math.abs(dy) * 1.2) {
+        return;
+      }
+      isSwipingRef.current = true;
+    }
+
+    const newTranslateX = -currentPage * 100 + (dx / window.innerWidth) * 100;
     setTranslateX(newTranslateX);
   };
 
   const handleMouseEnd = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    
-    const endX = e.clientX;
-    const diff = endX - startX;
-    const threshold = window.innerWidth * 0.2;
-    
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0 && currentPage > 0) {
+
+    const dx = e.clientX - startX;
+    const thresholdPx = Math.max(window.innerWidth * 0.35, 90);
+
+    if (isSwipingRef.current && Math.abs(dx) > thresholdPx) {
+      if (dx > 0 && currentPage > 0) {
         onPageChange(currentPage - 1);
-      } else if (diff < 0 && currentPage < children.length - 1) {
+      } else if (dx < 0 && currentPage < children.length - 1) {
         onPageChange(currentPage + 1);
       }
     }
-    
+
     setIsDragging(false);
+    isSwipingRef.current = false;
     setTranslateX(-currentPage * 100);
   };
 

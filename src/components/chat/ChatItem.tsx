@@ -56,6 +56,7 @@ export const ChatItem = ({ contact, onSelect, onDelete, formatTimestamp }: ChatI
     handleStart(e.touches[0].clientX);
     // Prevent page scroll during swipe
     e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -74,6 +75,7 @@ export const ChatItem = ({ contact, onSelect, onDelete, formatTimestamp }: ChatI
   const handleMouseDown = (e: React.MouseEvent) => {
     handleStart(e.clientX);
     e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -108,7 +110,7 @@ export const ChatItem = ({ contact, onSelect, onDelete, formatTimestamp }: ChatI
   };
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-hidden" data-swipe-exempt="true">
       {/* Delete button background */}
       <div className="absolute right-0 top-0 h-full w-20 bg-red-500 flex items-center justify-center">
         <Button
