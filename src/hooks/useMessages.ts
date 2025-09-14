@@ -125,67 +125,86 @@ export const useMessages = (conversationId: string | null, userId: string) => {
     };
   }, [conversationId, userId]);
 
-  const sendMessage = async (text: string, recipientId: string) => {
-    if (!conversationId || !text.trim()) {
-      console.log('Cannot send message:', { conversationId, text: text.trim() });
+  const sendMessage = async (text: string, recipientId: string): Promise<string | undefined> => {
+    const trimmed = text.trim();
+    if (!trimmed || !userId) {
+      console.log('Cannot send message: missing text or userId', { trimmed, userId });
       return;
     }
 
-    console.log('Sending message:', { conversationId, userId, text, recipientId });
-
-    const tempId = `temp-${Date.now()}`;
-    const tempMessage: Message = {
-      id: tempId,
-      text,
-      timestamp: new Date(),
-      sent: true,
-      status: 'sending',
-      sender_id: userId,
-      conversation_id: conversationId,
-    };
-
-    // Add optimistic message
-    setMessages((prev) => [...prev, tempMessage]);
-
+    // Ensure we have a conversation id (find or create)
+    let convId = conversationId || '';
     try {
+      if (!convId) {
+        console.log('[useMessages] No conversationId, searching/creating for', { userId, recipientId });
+        const { data: existingConversation, error: findErr } = await supabase
+          .from('conversations')
+          .select('*')
+          .or(`and(participant_1.eq.${userId},participant_2.eq.${recipientId}),and(participant_1.eq.${recipientId},participant_2.eq.${userId})`)
+          .maybeSingle();
+
+        if (findErr && findErr.code !== 'PGRST116') {
+          console.error('Error finding conversation:', findErr);
+        }
+
+        if (existingConversation) {
+          convId = existingConversation.id;
+        } else {
+          const { data: newConv, error: createErr } = await supabase
+            .from('conversations')
+            .insert({ participant_1: userId, participant_2: recipientId })
+            .select()
+            .single();
+          if (createErr || !newConv) {
+            console.error('Error creating conversation:', createErr);
+            toast({
+              title: 'Errore',
+              description: 'Impossibile creare la conversazione',
+              variant: 'destructive',
+            });
+            return;
+          }
+          convId = newConv.id;
+          console.log('[useMessages] Conversation created', newConv);
+        }
+      }
+
+      const tempId = `temp-${Date.now()}`;
+      const tempMessage: Message = {
+        id: tempId,
+        text: trimmed,
+        timestamp: new Date(),
+        sent: true,
+        status: 'sending',
+        sender_id: userId,
+        conversation_id: convId,
+      };
+      setMessages((prev) => [...prev, tempMessage]);
+
       const { data, error } = await supabase
         .from('messages')
         .insert([
           {
-            conversation_id: conversationId,
+            conversation_id: convId,
             sender_id: userId,
-            content: text,
-          }
+            content: trimmed,
+          },
         ])
         .select()
         .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         console.error('Error sending message:', error);
-        // Remove optimistic message on error
         setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
         toast({
           title: 'Errore',
-          description: `Impossibile inviare il messaggio: ${error.message}`,
+          description: `Impossibile inviare il messaggio${error?.message ? `: ${error.message}` : ''}`,
           variant: 'destructive',
         });
         return;
       }
 
-      if (!data) {
-        console.error('No data returned from message insert');
-        setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
-        toast({
-          title: 'Errore',
-          description: 'Impossibile inviare il messaggio - nessun dato ritornato',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      console.log('Message sent successfully:', data);
-
-      // Replace optimistic message with real one
+      // Replace optimistic message
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId
@@ -198,22 +217,17 @@ export const useMessages = (conversationId: string | null, userId: string) => {
         )
       );
 
-        await supabase
+      // Update conversation summary
+      await supabase
         .from('conversations')
-        .update({
-          last_message: text,
-          last_message_at: new Date().toISOString(),
-        })
-        .eq('id', conversationId);
+        .update({ last_message: trimmed, last_message_at: new Date().toISOString() })
+        .eq('id', convId);
 
+      return convId;
     } catch (error) {
-      console.error('Error sending message:', error);
-      setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
-      toast({
-        title: 'Errore',
-        description: 'Impossibile inviare il messaggio',
-        variant: 'destructive',
-      });
+      console.error('Error sending message (catch):', error);
+      toast({ title: 'Errore', description: 'Invio fallito', variant: 'destructive' });
+      return;
     }
   };
 
