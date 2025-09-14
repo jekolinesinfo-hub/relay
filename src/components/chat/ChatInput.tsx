@@ -47,13 +47,10 @@ export const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
   };
 
   const handleFocus = () => {
-    // Scroll into view on mobile when focused
+    // Avoid forcing page scroll on focus; just ensure height is correct
     setTimeout(() => {
-      textareaRef.current?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'nearest' 
-      });
-    }, 100);
+      adjustTextareaHeight();
+    }, 0);
   };
 
   return (

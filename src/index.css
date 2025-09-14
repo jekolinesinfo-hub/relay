@@ -141,8 +141,16 @@
     @apply border-border;
   }
 
+  html, body, #root {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
+    overscroll-behavior-y: contain;
+    -webkit-text-size-adjust: 100%;
   }
   
   /* Chat bubble animations */
