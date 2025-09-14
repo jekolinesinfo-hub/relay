@@ -8,6 +8,8 @@ export const useGlobalNotifications = (userId: string | null) => {
   useEffect(() => {
     if (!userId) return;
 
+    console.log('[GlobalNotifications] Init for user', userId);
+
     // Global subscription for all messages directed to this user
     const channel = supabase
       .channel('global-notifications')
@@ -19,29 +21,42 @@ export const useGlobalNotifications = (userId: string | null) => {
           table: 'messages',
         },
         async (payload) => {
+          console.log('[GlobalNotifications] INSERT on messages', payload);
           // Check if this message is for the current user
-          const { data: conversation } = await supabase
+          const { data: conversation, error: convErr } = await supabase
             .from('conversations')
             .select('participant_1, participant_2')
             .eq('id', payload.new.conversation_id)
             .single();
 
+          if (convErr) {
+            console.log('[GlobalNotifications] Conversation fetch error', convErr);
+          }
+
+          console.log('[GlobalNotifications] Conversation for message', conversation);
+
           if (conversation && 
               (conversation.participant_1 === userId || conversation.participant_2 === userId) &&
               payload.new.sender_id !== userId) {
+            console.log('[GlobalNotifications] Message is for current user, show notifications');
             
             // Get sender name
-            const { data: senderProfile } = await supabase
+            const { data: senderProfile, error: senderErr } = await supabase
               .from('profiles')
               .select('name, display_name')
               .eq('id', payload.new.sender_id)
               .single();
+
+            if (senderErr) {
+              console.log('[GlobalNotifications] Sender profile fetch error', senderErr);
+            }
 
             const senderName = senderProfile?.display_name || senderProfile?.name || `User ${payload.new.sender_id.slice(-4)}`;
 
             // Show global notification only if not in the specific chat
             const currentPath = window.location.pathname;
             const isInChat = currentPath.includes('/chat') || document.querySelector('[data-chat-view="true"]');
+            console.log('[GlobalNotifications] isInChat?', !!isInChat);
             
             if (!isInChat) {
               toast({
@@ -78,6 +93,8 @@ export const useGlobalNotifications = (userId: string | null) => {
                 }
               }
             }
+          } else {
+            console.log('[GlobalNotifications] Message not for current user or from self, skipping');
           }
         }
       )
