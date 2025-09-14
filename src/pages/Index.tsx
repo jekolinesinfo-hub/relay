@@ -10,6 +10,14 @@ import { SettingsPage } from "./SettingsPage";
 import { useAuth } from "@/hooks/useAuth";
 import { useContacts, DatabaseContact } from "@/hooks/useContacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { MessageCircle, Phone, Settings as SettingsIcon, Users } from "lucide-react";
+
+const pages = [
+  { name: 'Status', icon: Users },
+  { name: 'Chat', icon: MessageCircle },
+  { name: 'Chiamate', icon: Phone },
+  { name: 'Impostazioni', icon: SettingsIcon },
+];
 
 const Index = () => {
   const { isAuthenticated, isLoading, userId } = useAuth();
@@ -65,7 +73,29 @@ const Index = () => {
   }
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] bg-background overflow-hidden">
+    <div className="h-[100svh] max-h-[100svh] bg-background overflow-hidden">
+      {/* Fixed top navigation visible on all pages */}
+      <div className="fixed top-0 left-0 right-0 z-40 h-14 pt-[env(safe-area-inset-top)] flex justify-center items-center gap-2 bg-gradient-to-r from-relay-primary to-relay-secondary">
+        {pages.map((page, index) => {
+          const Icon = page.icon;
+          const active = currentPage === index;
+          return (
+            <button
+              key={page.name}
+              onClick={() => setCurrentPage(index)}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
+                active ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-xs font-medium">{page.name}</span>
+            </button>
+          );
+        })}
+      </div>
+      {/* Spacer to offset the fixed bar */}
+      <div className="h-14 pt-[env(safe-area-inset-top)]" aria-hidden="true" />
+
       <SwipeablePages 
         currentPage={currentPage} 
         onPageChange={setCurrentPage}
