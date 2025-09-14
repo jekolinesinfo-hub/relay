@@ -17,7 +17,7 @@ interface SettingsModalProps {
     name: string;
     id: string;
   };
-  onUpdateName: (name: string) => boolean;
+  onUpdateName: (name: string) => Promise<boolean>;
 }
 
 export const SettingsModal = ({ open, onClose, userProfile, onUpdateName }: SettingsModalProps) => {
@@ -26,8 +26,8 @@ export const SettingsModal = ({ open, onClose, userProfile, onUpdateName }: Sett
   const { networks, getNetworkIcon, getNetworkLabel, toggleNetwork } = useNetworkStatus();
   const { toast } = useToast();
 
-  const handleSaveName = () => {
-    if (onUpdateName(tempName)) {
+  const handleSaveName = async () => {
+    if (await onUpdateName(tempName)) {
       setEditingName(false);
       toast({
         title: "Nome aggiornato!",

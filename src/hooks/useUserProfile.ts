@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UserProfile {
   name: string;
@@ -12,21 +13,66 @@ export const useUserProfile = (userId: string) => {
   });
 
   useEffect(() => {
-    // Carica il nome dal localStorage
-    const savedName = localStorage.getItem('whatsapp-clone-user-name');
-    if (savedName) {
-      setProfile(prev => ({ ...prev, name: savedName }));
-    } else {
-      // Nome predefinito basato sull'ID
-      setProfile(prev => ({ ...prev, name: `User${userId.slice(-4)}` }));
-    }
+    if (!userId) return;
+
+    const loadProfile = async () => {
+      // Prima prova a caricare dal database
+      const { data: dbProfile } = await supabase
+        .from('profiles')
+        .select('name, display_name')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (dbProfile && (dbProfile.display_name || dbProfile.name)) {
+        const userName = dbProfile.display_name || dbProfile.name;
+        setProfile(prev => ({ ...prev, name: userName }));
+        // Sincronizza con localStorage
+        localStorage.setItem('whatsapp-clone-user-name', userName);
+        return;
+      }
+
+      // Fallback al localStorage
+      const savedName = localStorage.getItem('whatsapp-clone-user-name');
+      if (savedName) {
+        setProfile(prev => ({ ...prev, name: savedName }));
+        // Aggiorna il database con il nome dal localStorage
+        await updateDatabaseProfile(savedName);
+      } else {
+        // Nome predefinito basato sull'ID
+        const defaultName = `User${userId.slice(-4)}`;
+        setProfile(prev => ({ ...prev, name: defaultName }));
+        // Crea il profilo nel database
+        await updateDatabaseProfile(defaultName);
+      }
+    };
+
+    loadProfile();
   }, [userId]);
 
-  const updateName = (newName: string) => {
+  const updateDatabaseProfile = async (name: string) => {
+    if (!userId) return;
+
+    try {
+      await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          user_id: userId,
+          name: name,
+          display_name: name,
+        });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
+
+  const updateName = async (newName: string) => {
     const trimmedName = newName.trim();
     if (trimmedName.length > 0) {
       localStorage.setItem('whatsapp-clone-user-name', trimmedName);
       setProfile(prev => ({ ...prev, name: trimmedName }));
+      // Aggiorna anche il database
+      await updateDatabaseProfile(trimmedName);
       return true;
     }
     return false;
