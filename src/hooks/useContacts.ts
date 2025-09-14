@@ -331,6 +331,22 @@ export const useContacts = (userId: string) => {
               console.log('[Contacts] Updated unread counts:', updated);
               return updated;
             });
+
+            // Immediate UI update without waiting for a refetch
+            setContacts(prev => prev.map(c => 
+              c.id === senderId 
+                ? { ...c, unreadCount: (c.unreadCount || 0) + 1, hasNewMessage: true }
+                : c
+            ));
+
+            // If chat was hidden locally, unhide it on new message
+            setHiddenChats(prev => {
+              if (!prev.has(senderId)) return prev;
+              const next = new Set(prev);
+              next.delete(senderId);
+              persistHidden(next);
+              return next;
+            });
           }
           // Rely on unreadCounts effect to refresh contacts
         })
