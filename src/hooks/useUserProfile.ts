@@ -38,11 +38,11 @@ export const useUserProfile = (userId: string) => {
         // Aggiorna il database con il nome dal localStorage
         await updateDatabaseProfile(savedName);
       } else {
-        // Nome predefinito basato sull'ID
-        const defaultName = `User${userId.slice(-4)}`;
-        setProfile(prev => ({ ...prev, name: defaultName }));
-        // Crea il profilo nel database
-        await updateDatabaseProfile(defaultName);
+      // Default name based on ID instead of generic "Relay User"
+      const defaultName = `User${userId.slice(-4)}`;
+      setProfile(prev => ({ ...prev, name: defaultName }));
+      // Create the profile in the database with a proper name
+      await updateDatabaseProfile(defaultName);
       }
     };
 

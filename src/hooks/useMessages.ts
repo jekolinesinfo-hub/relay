@@ -169,7 +169,7 @@ export const useMessages = (conversationId: string | null, userId: string) => {
         }
       }
 
-      const tempId = `temp-${Date.now()}`;
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
       const tempMessage: Message = {
         id: tempId,
         text: trimmed,
