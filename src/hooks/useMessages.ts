@@ -70,18 +70,18 @@ export const useMessages = (conversationId: string | null, userId: string) => {
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
-          const newMessage: Message = {
-            id: payload.new.id,
-            text: payload.new.content || '',
-            timestamp: new Date(payload.new.created_at),
-            sent: payload.new.sender_id === userId,
-            status: 'sent',
-            sender_id: payload.new.sender_id,
-            conversation_id: payload.new.conversation_id,
-          };
-          
-          setMessages((prev) => [...prev, newMessage]);
+         (payload) => {
+           const newMessage: Message = {
+             id: payload.new.id,
+             text: payload.new.content || '',
+             timestamp: new Date(payload.new.created_at),
+             sent: payload.new.sender_id === userId,
+             status: 'sent',
+             sender_id: payload.new.sender_id,
+             conversation_id: payload.new.conversation_id,
+           };
+           
+           setMessages((prev) => (prev.some(m => m.id === newMessage.id) ? prev : [...prev, newMessage]));
 
           // Show notification for received messages
           if (payload.new.sender_id !== userId) {

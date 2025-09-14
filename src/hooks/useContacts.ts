@@ -57,12 +57,36 @@ export const useContacts = (userId: string) => {
         }
       });
 
-      // 3) Prepare list of contacts coming from the contacts table, enrich with conversation if present
+      // 3) Build profiles lookup for all involved partner IDs (contacts + conversations)
+      const knownIds = new Set((contactsData || []).map((c) => c.contact_id));
+      const convPartnerIds: string[] = [];
+      convByPartner.forEach((_conv, partnerId) => convPartnerIds.push(partnerId));
+      const contactIds: string[] = (contactsData || []).map((c) => c.contact_id);
+      const allPartnerIds = Array.from(new Set([...contactIds, ...convPartnerIds]));
+
+      let profilesLookup = new Map<string, { name?: string; display_name?: string }>();
+      if (allPartnerIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, display_name')
+          .in('id', allPartnerIds);
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+        } else {
+          profilesLookup = new Map(
+            (profilesData || []).map((p: any) => [p.id, { name: p.name, display_name: p.display_name }])
+          );
+        }
+      }
+
+      // 4) Prepare list of contacts coming from contacts table, prefer profile names
       const baseContacts: DatabaseContact[] = (contactsData || []).map((contact) => {
         const conversation = convByPartner.get(contact.contact_id);
+        const profile = profilesLookup.get(contact.contact_id);
+        const computedName = profile?.display_name || profile?.name || contact.contact_name || `User ${contact.contact_id.slice(-4)}`;
         return {
           id: contact.contact_id,
-          name: contact.contact_name || 'Unknown User',
+          name: computedName,
           lastMessage: conversation?.last_message || '',
           timestamp: conversation ? new Date(conversation.updated_at) : undefined,
           unreadCount: 0,
@@ -71,27 +95,11 @@ export const useContacts = (userId: string) => {
         } as DatabaseContact;
       });
 
-      // 4) Add "virtual" contacts from conversations not already in contacts
-      const knownIds = new Set((contactsData || []).map((c) => c.contact_id));
+      // 5) Add virtual contacts from conversations not already in contacts
       const missingIds: string[] = [];
       convByPartner.forEach((_conv, partnerId) => {
         if (!knownIds.has(partnerId)) missingIds.push(partnerId);
       });
-
-      let profilesLookup = new Map<string, { name?: string; display_name?: string }>();
-      if (missingIds.length > 0) {
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, name, display_name')
-          .in('id', missingIds);
-        if (profilesError) {
-          console.error('Error fetching profiles for conversations:', profilesError);
-        } else {
-          profilesLookup = new Map(
-            (profilesData || []).map((p: any) => [p.id, { name: p.name, display_name: p.display_name }])
-          );
-        }
-      }
 
       const virtualContacts: DatabaseContact[] = missingIds.map((partnerId) => {
         const conv = convByPartner.get(partnerId);
