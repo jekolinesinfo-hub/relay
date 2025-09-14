@@ -10,6 +10,7 @@ import { SettingsPage } from "./SettingsPage";
 import { useAuth } from "@/hooks/useAuth";
 import { useContacts, DatabaseContact } from "@/hooks/useContacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { MessageCircle, Phone, Settings, Users } from "lucide-react";
 
 const pages = [
@@ -23,6 +24,10 @@ const Index = () => {
   const { isAuthenticated, isLoading, userId } = useAuth();
   const { contacts, addContact, deleteContact } = useContacts(userId || '');
   const { profile, updateName } = useUserProfile(userId || '');
+  
+  // Enable global notifications
+  useGlobalNotifications(userId);
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedContact, setSelectedContact] = useState<DatabaseContact | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
@@ -96,7 +101,10 @@ const Index = () => {
       </div>
       {/* Spacer to offset fixed top bar */}
       <div className="h-14 pt-[env(safe-area-inset-top)]" aria-hidden="true" />
-      <div className="flex-1 min-h-0">
+      <div 
+        className="flex-1 min-h-0"
+        data-chat-view={selectedContact ? "true" : "false"}
+      >
         <SwipeablePages 
           currentPage={currentPage} 
           onPageChange={setCurrentPage}

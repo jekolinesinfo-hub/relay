@@ -81,6 +81,41 @@ export const useMessages = (conversationId: string | null, userId: string) => {
           };
           
           setMessages((prev) => [...prev, newMessage]);
+
+          // Show notification for received messages
+          if (payload.new.sender_id !== userId) {
+            toast({
+              title: "Nuovo messaggio",
+              description: payload.new.content || "Hai ricevuto un nuovo messaggio",
+              duration: 3000,
+            });
+
+            // Play notification sound
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxEw4fH');
+            audio.volume = 0.3;
+            audio.play().catch(e => console.log('Could not play notification sound:', e));
+
+            // Browser notification if tab is not active
+            if (document.hidden && 'Notification' in window) {
+              if (Notification.permission === 'granted') {
+                new Notification('Nuovo messaggio', {
+                  body: payload.new.content || 'Hai ricevuto un nuovo messaggio',
+                  icon: '/favicon.ico',
+                  tag: 'new-message'
+                });
+              } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                  if (permission === 'granted') {
+                    new Notification('Nuovo messaggio', {
+                      body: payload.new.content || 'Hai ricevuto un nuovo messaggio',
+                      icon: '/favicon.ico',
+                      tag: 'new-message'
+                    });
+                  }
+                });
+              }
+            }
+          }
         }
       )
       .subscribe();

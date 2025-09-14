@@ -1,0 +1,97 @@
+import { useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from './use-toast';
+
+export const useGlobalNotifications = (userId: string | null) => {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // Global subscription for all messages directed to this user
+    const channel = supabase
+      .channel('global-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        async (payload) => {
+          // Check if this message is for the current user
+          const { data: conversation } = await supabase
+            .from('conversations')
+            .select('participant_1, participant_2')
+            .eq('id', payload.new.conversation_id)
+            .single();
+
+          if (conversation && 
+              (conversation.participant_1 === userId || conversation.participant_2 === userId) &&
+              payload.new.sender_id !== userId) {
+            
+            // Get sender name
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('name, display_name')
+              .eq('id', payload.new.sender_id)
+              .single();
+
+            const senderName = senderProfile?.display_name || senderProfile?.name || `User ${payload.new.sender_id.slice(-4)}`;
+
+            // Show global notification only if not in the specific chat
+            const currentPath = window.location.pathname;
+            const isInChat = currentPath.includes('/chat') || document.querySelector('[data-chat-view="true"]');
+            
+            if (!isInChat) {
+              toast({
+                title: `Messaggio da ${senderName}`,
+                description: payload.new.content || "Nuovo messaggio ricevuto",
+                duration: 5000,
+              });
+
+              // Play notification sound
+              const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxEw4fH');
+              audio.volume = 0.4;
+              audio.play().catch(e => console.log('Could not play notification sound:', e));
+
+              // Browser notification
+              if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                  new Notification(`Messaggio da ${senderName}`, {
+                    body: payload.new.content || 'Nuovo messaggio ricevuto',
+                    icon: '/favicon.ico',
+                    tag: 'global-message',
+                    requireInteraction: false,
+                  });
+                } else if (Notification.permission !== 'denied') {
+                  Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                      new Notification(`Messaggio da ${senderName}`, {
+                        body: payload.new.content || 'Nuovo messaggio ricevuto',
+                        icon: '/favicon.ico',
+                        tag: 'global-message',
+                        requireInteraction: false,
+                      });
+                    }
+                  });
+                }
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, toast]);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+};
