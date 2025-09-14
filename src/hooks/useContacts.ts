@@ -277,29 +277,26 @@ export const useContacts = (userId: string) => {
       // Realtime updates: refresh list on new messages or conversation updates
       const channel = supabase
         .channel('contacts-conv-updates')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
           // Check if message is for current user and increment unread count
-          const checkAndUpdateUnread = async () => {
-            const { data: conversation } = await supabase
-              .from('conversations')
-              .select('participant_1, participant_2')
-              .eq('id', payload.new.conversation_id)
-              .single();
+          const { data: conversation } = await supabase
+            .from('conversations')
+            .select('participant_1, participant_2')
+            .eq('id', payload.new.conversation_id)
+            .single();
 
-            if (conversation && 
-                (conversation.participant_1 === userId || conversation.participant_2 === userId) &&
-                payload.new.sender_id !== userId) {
-              // This is a message for current user from someone else
-              const senderId = payload.new.sender_id;
-              console.log('[Contacts] New message for current user from', senderId, 'payload:', payload.new);
-              setUnreadCounts(prev => ({
-                ...prev,
-                [senderId]: (prev[senderId] || 0) + 1
-              }));
-            }
-          };
-          checkAndUpdateUnread();
-          fetchContacts();
+          if (conversation && 
+              (conversation.participant_1 === userId || conversation.participant_2 === userId) &&
+              payload.new.sender_id !== userId) {
+            // This is a message for current user from someone else
+            const senderId = payload.new.sender_id;
+            console.log('[Contacts] New message for current user from', senderId, 'payload:', payload.new);
+            setUnreadCounts(prev => ({
+              ...prev,
+              [senderId]: (prev[senderId] || 0) + 1
+            }));
+          }
+          // Rely on unreadCounts effect to refresh contacts
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, () => {
           fetchContacts();

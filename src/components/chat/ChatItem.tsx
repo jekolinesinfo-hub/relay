@@ -160,14 +160,14 @@ export const ChatItem = ({ contact, onSelect, onDelete, formatTimestamp }: ChatI
             
             <div className="flex items-center justify-between mt-1">
               <p className="text-sm text-muted-foreground truncate flex-1 mr-2">
-                {contact.hasNewMessage ? (
-                  <span className="text-whatsapp-green font-medium">NEW MESSAGE</span>
+                {(contact.hasNewMessage || (contact.unreadCount ?? 0) > 0) ? (
+                  <span className="text-whatsapp-green font-medium">Nuovo messaggio</span>
                 ) : (
                   contact.lastMessage || `ID: ${contact.id}`
                 )}
               </p>
               <div className="flex items-center gap-2">
-                {contact.unreadCount && contact.unreadCount > 0 && (
+                {(contact.unreadCount ?? 0) > 0 && (
                   <span className="bg-whatsapp-green text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center font-medium">
                     {contact.unreadCount > 99 ? '99+' : contact.unreadCount}
                   </span>
