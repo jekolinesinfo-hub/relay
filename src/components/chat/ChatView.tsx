@@ -5,6 +5,7 @@ import { ChatInput } from "./ChatInput";
 import { useMessages, Message } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { DatabaseContact } from "@/hooks/useContacts";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatViewProps {
   contact: DatabaseContact;
@@ -23,6 +24,27 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-save contact when opening a chat if not already in contacts
+  useEffect(() => {
+    if (!userId || !contact?.id) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('contact_id')
+        .eq('user_id', userId)
+        .eq('contact_id', contact.id)
+        .maybeSingle();
+
+      if (!data && (!error || (error as any).code === 'PGRST116')) {
+        await supabase.from('contacts').insert({
+          user_id: userId,
+          contact_id: contact.id,
+          contact_name: contact.name || `User ${contact.id.slice(-4)}`,
+        });
+      }
+    })();
+  }, [userId, contact?.id]);
 
   const handleSendMessage = async (text: string) => {
     if (!userId || !contact.conversationId) return;

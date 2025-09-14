@@ -19,10 +19,9 @@ export const useContacts = (userId: string) => {
 
   const fetchContacts = async () => {
     if (!userId) return;
-    
     setIsLoading(true);
     try {
-      // Get all contacts for this user
+      // 1) Fetch saved contacts
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
         .select('contact_id, contact_name')
@@ -33,7 +32,7 @@ export const useContacts = (userId: string) => {
         return;
       }
 
-      // Get conversations with these contacts
+      // 2) Fetch all conversations that involve the user (even if not in contacts)
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('conversations')
         .select('*')
@@ -45,30 +44,88 @@ export const useContacts = (userId: string) => {
         return;
       }
 
-      const formattedContacts: DatabaseContact[] = contactsData
-        .map((contact) => {
-          // Find conversation with this contact
-          const conversation = conversationsData.find(
-            (conv) =>
-              (conv.participant_1 === userId && conv.participant_2 === contact.contact_id) ||
-              (conv.participant_2 === userId && conv.participant_1 === contact.contact_id)
-          );
+      // Build a quick lookup for conversations by the other participant
+      const convByPartner = new Map<string, any>();
+      (conversationsData || []).forEach((conv: any) => {
+        const otherId = conv.participant_1 === userId ? conv.participant_2 : conv.participant_1;
+        // Keep the most recent conversation if duplicates
+        const prev = convByPartner.get(otherId);
+        if (!prev || new Date(conv.updated_at).getTime() > new Date(prev.updated_at).getTime()) {
+          convByPartner.set(otherId, conv);
+        }
+      });
 
-          return {
-            id: contact.contact_id,
-            name: contact.contact_name || 'Unknown User',
-            lastMessage: conversation?.last_message || '',
-            timestamp: conversation ? new Date(conversation.updated_at) : undefined,
-            unreadCount: 0,
-            isOnline: Math.random() > 0.5,
-            conversationId: conversation?.id,
-          };
-        })
-        .sort((a, b) => {
-          if (!a.timestamp) return 1;
-          if (!b.timestamp) return -1;
-          return b.timestamp.getTime() - a.timestamp.getTime();
-        });
+      // 3) Prepare list of contacts coming from the contacts table, enrich with conversation if present
+      const baseContacts: DatabaseContact[] = (contactsData || []).map((contact) => {
+        const conversation = convByPartner.get(contact.contact_id);
+        return {
+          id: contact.contact_id,
+          name: contact.contact_name || 'Unknown User',
+          lastMessage: conversation?.last_message || '',
+          timestamp: conversation ? new Date(conversation.updated_at) : undefined,
+          unreadCount: 0,
+          isOnline: Math.random() > 0.5,
+          conversationId: conversation?.id,
+        } as DatabaseContact;
+      });
+
+      // 4) Add "virtual" contacts from conversations not already in contacts
+      const knownIds = new Set((contactsData || []).map((c) => c.contact_id));
+      const missingIds: string[] = [];
+      convByPartner.forEach((_conv, partnerId) => {
+        if (!knownIds.has(partnerId)) missingIds.push(partnerId);
+      });
+
+      let profilesLookup = new Map<string, { name?: string; display_name?: string }>();
+      if (missingIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, display_name')
+          .in('id', missingIds);
+        if (profilesError) {
+          console.error('Error fetching profiles for conversations:', profilesError);
+        } else {
+          profilesLookup = new Map(
+            (profilesData || []).map((p: any) => [p.id, { name: p.name, display_name: p.display_name }])
+          );
+        }
+      }
+
+      const virtualContacts: DatabaseContact[] = missingIds.map((partnerId) => {
+        const conv = convByPartner.get(partnerId);
+        const profile = profilesLookup.get(partnerId);
+        const fallbackName = profile?.display_name || profile?.name || `User ${partnerId.slice(-4)}`;
+        return {
+          id: partnerId,
+          name: fallbackName,
+          lastMessage: conv?.last_message || '',
+          timestamp: conv ? new Date(conv.updated_at) : undefined,
+          unreadCount: 0,
+          isOnline: Math.random() > 0.5,
+          conversationId: conv?.id,
+        } as DatabaseContact;
+      });
+
+      // 5) Merge and sort by timestamp desc (conversations first)
+      const mergedMap = new Map<string, DatabaseContact>();
+      [...baseContacts, ...virtualContacts].forEach((c) => {
+        const existing = mergedMap.get(c.id);
+        if (!existing) {
+          mergedMap.set(c.id, c);
+        } else {
+          // Prefer entries with conversation info and newer timestamps
+          const existingTime = existing.timestamp ? existing.timestamp.getTime() : 0;
+          const currentTime = c.timestamp ? c.timestamp.getTime() : 0;
+          if (currentTime > existingTime) mergedMap.set(c.id, c);
+          else if (!existing.conversationId && c.conversationId) mergedMap.set(c.id, c);
+        }
+      });
+
+      const formattedContacts = Array.from(mergedMap.values()).sort((a, b) => {
+        const at = a.timestamp ? a.timestamp.getTime() : 0;
+        const bt = b.timestamp ? b.timestamp.getTime() : 0;
+        return bt - at;
+      });
 
       setContacts(formattedContacts);
     } catch (error) {
@@ -201,6 +258,21 @@ export const useContacts = (userId: string) => {
   useEffect(() => {
     if (userId) {
       fetchContacts();
+
+      // Realtime updates: refresh list on new messages or conversation updates
+      const channel = supabase
+        .channel('contacts-conv-updates')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+          fetchContacts();
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, () => {
+          fetchContacts();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [userId]);
 
