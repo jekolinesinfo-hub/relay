@@ -47,7 +47,7 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
   }, [userId, contact?.id]);
 
   const handleSendMessage = async (text: string) => {
-    if (!userId || !contact.conversationId) return;
+    if (!userId) return;
     await sendMessage(text, contact.id);
   };
 
