@@ -302,6 +302,13 @@ export const useContacts = (userId: string) => {
     }
   }, [userId]);
 
+  // Refetch contacts when unread counts change to immediately reflect badges/labels
+  useEffect(() => {
+    if (userId) {
+      fetchContacts();
+    }
+  }, [unreadCounts, userId]);
+
   const searchUserByIdPartial = useCallback(async (partialId: string) => {
     if (!partialId || partialId.length < 2) return [];
     
