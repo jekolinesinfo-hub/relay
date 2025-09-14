@@ -16,13 +16,21 @@ export const ChatView = ({ contact, onBack }: ChatViewProps) => {
   const { userId } = useAuth();
   const { messages, sendMessage } = useMessages(contact.conversationId || null, userId || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isInitialLoad = useRef(true);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "instant" });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (isInitialLoad.current) {
+      // Jump instantly to bottom on first load
+      scrollToBottom(false);
+      isInitialLoad.current = false;
+    } else {
+      // Smooth scroll for new messages
+      scrollToBottom(true);
+    }
   }, [messages]);
 
   // Auto-save contact when opening a chat if not already in contacts
