@@ -101,9 +101,9 @@ const handleMouseStart = (e: React.MouseEvent) => {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-background overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden overscroll-contain pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* Navigation dots */}
-      <div className="flex justify-center gap-2 py-2 bg-gradient-to-r from-relay-primary to-relay-secondary">
+      <div className="sticky top-0 z-40 flex justify-center gap-2 py-2 bg-gradient-to-r from-relay-primary to-relay-secondary">
         {pages.map((page, index) => {
           const IconComponent = page.icon;
           return (
