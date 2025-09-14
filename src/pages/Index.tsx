@@ -22,7 +22,7 @@ const pages = [
 
 const Index = () => {
   const { isAuthenticated, isLoading, userId } = useAuth();
-  const { contacts, addContact, deleteContact } = useContacts(userId || '');
+  const { contacts, addContact, deleteContact, markAsRead } = useContacts(userId || '');
   const { profile, updateName } = useUserProfile(userId || '');
   
   // Enable global notifications
@@ -49,6 +49,8 @@ const Index = () => {
 
   const handleContactSelect = (contact: DatabaseContact) => {
     setSelectedContact(contact);
+    // Mark messages as read when opening chat
+    markAsRead(contact.id);
   };
 
   const handleBackToList = () => {

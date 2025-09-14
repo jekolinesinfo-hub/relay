@@ -10,11 +10,13 @@ export interface DatabaseContact {
   unreadCount?: number;
   isOnline?: boolean;
   conversationId?: string;
+  hasNewMessage?: boolean;
 }
 
 export const useContacts = (userId: string) => {
   const [contacts, setContacts] = useState<DatabaseContact[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
   const fetchContacts = async () => {
@@ -106,7 +108,7 @@ export const useContacts = (userId: string) => {
         } as DatabaseContact;
       });
 
-      // 5) Merge and sort by timestamp desc (conversations first)
+      // 5) Merge and sort by timestamp desc (conversations first) and apply unread counts
       const mergedMap = new Map<string, DatabaseContact>();
       [...baseContacts, ...virtualContacts].forEach((c) => {
         const existing = mergedMap.get(c.id);
@@ -121,7 +123,11 @@ export const useContacts = (userId: string) => {
         }
       });
 
-      const formattedContacts = Array.from(mergedMap.values()).sort((a, b) => {
+      const formattedContacts = Array.from(mergedMap.values()).map(contact => ({
+        ...contact,
+        unreadCount: unreadCounts[contact.id] || 0,
+        hasNewMessage: (unreadCounts[contact.id] || 0) > 0
+      })).sort((a, b) => {
         const at = a.timestamp ? a.timestamp.getTime() : 0;
         const bt = b.timestamp ? b.timestamp.getTime() : 0;
         return bt - at;
@@ -262,7 +268,27 @@ export const useContacts = (userId: string) => {
       // Realtime updates: refresh list on new messages or conversation updates
       const channel = supabase
         .channel('contacts-conv-updates')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+          // Check if message is for current user and increment unread count
+          const checkAndUpdateUnread = async () => {
+            const { data: conversation } = await supabase
+              .from('conversations')
+              .select('participant_1, participant_2')
+              .eq('id', payload.new.conversation_id)
+              .single();
+
+            if (conversation && 
+                (conversation.participant_1 === userId || conversation.participant_2 === userId) &&
+                payload.new.sender_id !== userId) {
+              // This is a message for current user from someone else
+              const senderId = payload.new.sender_id;
+              setUnreadCounts(prev => ({
+                ...prev,
+                [senderId]: (prev[senderId] || 0) + 1
+              }));
+            }
+          };
+          checkAndUpdateUnread();
           fetchContacts();
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, () => {
@@ -298,6 +324,20 @@ export const useContacts = (userId: string) => {
     }
   }, []);
 
+  const markAsRead = (contactId: string) => {
+    setUnreadCounts(prev => {
+      const updated = { ...prev };
+      delete updated[contactId];
+      return updated;
+    });
+    // Update the specific contact in the list
+    setContacts(prev => prev.map(contact => 
+      contact.id === contactId 
+        ? { ...contact, unreadCount: 0, hasNewMessage: false }
+        : contact
+    ));
+  };
+
   return {
     contacts,
     isLoading,
@@ -305,5 +345,6 @@ export const useContacts = (userId: string) => {
     deleteContact,
     refreshContacts: fetchContacts,
     searchUserByIdPartial,
+    markAsRead,
   };
 };
