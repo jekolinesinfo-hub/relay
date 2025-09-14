@@ -165,6 +165,7 @@ export const useContacts = (userId: string) => {
 
       const visibleContacts = formattedContacts.filter(contact => !hiddenChats.has(contact.id));
       console.log('[Contacts] Visible contacts after hidden filter:', visibleContacts.map(c => ({ id: c.id, name: c.name, unread: c.unreadCount, hasNew: c.hasNewMessage })));
+      console.log('[Contacts] Current unread counts state:', unreadCounts);
       setContacts(visibleContacts);
     } catch (error) {
       console.error('Error fetching contacts:', error);
@@ -322,10 +323,14 @@ export const useContacts = (userId: string) => {
             // This is a message for current user from someone else
             const senderId = payload.new.sender_id;
             console.log('[Contacts] New message for current user from', senderId, 'payload:', payload.new);
-            setUnreadCounts(prev => ({
-              ...prev,
-              [senderId]: (prev[senderId] || 0) + 1
-            }));
+            setUnreadCounts(prev => {
+              const updated = {
+                ...prev,
+                [senderId]: (prev[senderId] || 0) + 1
+              };
+              console.log('[Contacts] Updated unread counts:', updated);
+              return updated;
+            });
           }
           // Rely on unreadCounts effect to refresh contacts
         })
@@ -370,9 +375,11 @@ export const useContacts = (userId: string) => {
   }, []);
 
   const markAsRead = (contactId: string) => {
+    console.log('[Contacts] Marking as read for contact:', contactId);
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[contactId];
+      console.log('[Contacts] Cleared unread for', contactId, 'new state:', updated);
       return updated;
     });
     // Update the specific contact in the list
